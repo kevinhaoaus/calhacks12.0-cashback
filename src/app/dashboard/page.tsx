@@ -16,7 +16,7 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
-  // Get user's purchases
+  // Get user's purchases with price tracking
   const { data: purchases } = await supabase
     .from('purchases')
     .select(`
@@ -24,6 +24,14 @@ export default async function DashboardPage() {
       retailers (
         name,
         default_return_days
+      ),
+      price_tracking (
+        id,
+        current_price,
+        original_price,
+        price_drop_detected,
+        price_drop_amount,
+        last_checked
       )
     `)
     .eq('user_id', user.id)
@@ -51,10 +59,16 @@ export default async function DashboardPage() {
     settings = newSettings
   }
 
-  // Calculate stats
+  // Calculate stats including price drops
   const totalSavings = purchases?.reduce((sum, p) => {
-    return sum + (p.claude_analysis?.money_recovery_potential?.total || 0)
+    const claudeSavings = p.claude_analysis?.money_recovery_potential?.total || 0
+    const priceDropSavings = p.price_tracking?.[0]?.price_drop_amount || 0
+    return sum + claudeSavings + priceDropSavings
   }, 0) || 0
+
+  const priceDrops = purchases?.filter(p =>
+    p.price_tracking?.[0]?.price_drop_detected
+  ).length || 0
 
   const activePurchases = purchases?.filter(p => p.return_status === 'active').length || 0
 
@@ -90,7 +104,7 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader>
               <CardTitle>Total Savings</CardTitle>
@@ -117,6 +131,19 @@ export default async function DashboardPage() {
               <div className="text-4xl font-bold">{activePurchases}</div>
               <p className="text-sm text-gray-500 mt-2">
                 {activePurchases === 0 ? 'Start by adding a receipt' : 'Being monitored'}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Price Drops</CardTitle>
+              <CardDescription>Price drops detected</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-4xl font-bold text-blue-600">{priceDrops}</div>
+              <p className="text-sm text-gray-500 mt-2">
+                {priceDrops === 0 ? 'No price drops yet' : 'Refund opportunities'}
               </p>
             </CardContent>
           </Card>
@@ -186,6 +213,11 @@ export default async function DashboardPage() {
                         {purchase.items && Array.isArray(purchase.items) && (
                           <p className="text-sm text-gray-500 mt-1">
                             {purchase.items.length} item{purchase.items.length !== 1 ? 's' : ''}
+                          </p>
+                        )}
+                        {purchase.price_tracking?.[0]?.price_drop_detected && (
+                          <p className="text-sm text-blue-600 font-semibold mt-1">
+                            💰 Price dropped ${purchase.price_tracking[0].price_drop_amount?.toFixed(2)}!
                           </p>
                         )}
                       </div>

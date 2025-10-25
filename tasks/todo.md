@@ -19,12 +19,14 @@
 - [x] Create test page for receipt processing
 - [x] Update dashboard with purchases display
 
-## Phase 4: Bright Data Integration (Days 10-13)
-- [ ] Set up Bright Data account
-- [ ] Build price tracking system
-- [ ] Scrape return policies (one-time bulk)
-- [ ] Implement daily price check cron
-- [ ] Create price drop detection logic
+## Phase 4: Bright Data Integration (Days 10-13) 🚀 NEXT
+- [ ] Create Bright Data utility library
+- [ ] Build price tracking API endpoint
+- [ ] Implement product price checking function
+- [ ] Add price tracking to test interface
+- [ ] Create cron job for daily price checks
+- [ ] Build price drop notification system
+- [ ] Add price history visualization to dashboard
 
 ## Phase 5: Postman Integration (Days 14-16)
 - [ ] Create comprehensive API collection
@@ -111,7 +113,7 @@
    - Created receipt extraction utility (`extract-receipt.ts`)
    - Built return policy analysis (`analyze-return.ts`)
    - Implemented refund email generation (`generate-refund-email.ts`)
-   - All using Claude Sonnet 4.5 for intelligent parsing
+   - All using Claude Sonnet 3.5 for intelligent parsing
 
 2. **API Endpoints**
    - `/api/webhooks/email` - Receives forwarded emails from Cloudflare Worker
@@ -145,6 +147,9 @@
 - `src/app/api/purchases/route.ts`
 - `src/app/test/page.tsx`
 - `src/app/dashboard/page.tsx` (enhanced)
+- `src/components/copy-button.tsx` (fixed Server Component error)
+- `supabase/fix-rls-policies.sql` (fixed RLS INSERT policies)
+- `src/app/api/debug/route.ts` (debugging endpoint)
 - `cloudflare-worker/src/index.ts`
 - `cloudflare-worker/wrangler.toml`
 - `cloudflare-worker/README.md`
@@ -156,8 +161,10 @@
 - ✅ User forwarding email generation
 - ✅ Test interface for development
 - ✅ Cloudflare Worker for email processing
+- ✅ Fixed all RLS policies for INSERT operations
+- ✅ Fixed Claude model names (3.5 Sonnet/Haiku)
 
 **Next Steps:**
-- Test the receipt parsing with real receipts
-- Deploy Cloudflare Worker (optional for now)
-- Add price tracking in Phase 4
+- Implement Bright Data price tracking (Phase 4)
+- Add price drop detection
+- Create cron job for daily price checks
