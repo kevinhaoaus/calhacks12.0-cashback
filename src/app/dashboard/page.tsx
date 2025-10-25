@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CopyButton } from '@/components/copy-button'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
@@ -147,13 +148,7 @@ export default async function DashboardPage() {
               <code className="flex-1 bg-gray-100 px-4 py-3 rounded-lg font-mono text-sm">
                 {settings?.forward_email || 'Loading...'}
               </code>
-              <Button
-                onClick={() => {
-                  navigator.clipboard.writeText(settings?.forward_email || '')
-                }}
-              >
-                Copy
-              </Button>
+              <CopyButton text={settings?.forward_email || ''} />
             </div>
             <p className="text-sm text-gray-600 mt-4">
               Forward any purchase confirmation email to this address, and we'll automatically extract the details using AI.
