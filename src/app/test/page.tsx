@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import { FileUpload } from '@/components/file-upload'
 
 const SAMPLE_RECEIPTS = {
   target: `TARGET STORE #1234
@@ -65,7 +66,9 @@ Payment: Visa ending in 9012`,
 }
 
 export default function TestPage() {
+  const [activeTab, setActiveTab] = useState<'text' | 'photo'>('text')
   const [receiptText, setReceiptText] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState('')
@@ -77,7 +80,7 @@ export default function TestPage() {
     setError('')
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleTextSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
@@ -113,27 +116,95 @@ export default function TestPage() {
     }
   }
 
+  const handleFileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedFile) {
+      setError('Please select a file')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+    setResult(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', selectedFile)
+
+      const response = await fetch('/api/upload-receipt', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to process receipt')
+      }
+
+      setResult(data)
+
+      // Redirect to dashboard after 2 seconds
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 2000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Test Receipt Processing</h1>
+          <h1 className="text-3xl font-bold mb-2">Submit Your Receipt</h1>
           <p className="text-gray-600">
-            Test Claude AI receipt extraction with sample receipts or paste your own
+            Upload a photo, paste text, or use our sample receipts
           </p>
+        </div>
+
+        {/* Tabs */}
+        <div className="mb-6 flex gap-2 border-b">
+          <button
+            onClick={() => setActiveTab('text')}
+            className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+              activeTab === 'text'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            📝 Paste Text
+          </button>
+          <button
+            onClick={() => setActiveTab('photo')}
+            className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+              activeTab === 'photo'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            📸 Upload Photo
+          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Input Section */}
           <Card>
             <CardHeader>
-              <CardTitle>Receipt Text</CardTitle>
+              <CardTitle>
+                {activeTab === 'text' ? 'Receipt Text' : 'Upload Receipt Photo'}
+              </CardTitle>
               <CardDescription>
-                Paste receipt text or load a sample
+                {activeTab === 'text'
+                  ? 'Paste receipt text or load a sample'
+                  : 'Take a photo or upload an image of your receipt'}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              {activeTab === 'text' ? (
+                <form onSubmit={handleTextSubmit} className="space-y-4">
                 <div>
                   <Label>Sample Receipts</Label>
                   <div className="flex gap-2 mt-2">
@@ -186,6 +257,30 @@ export default function TestPage() {
                   {loading ? 'Processing with Claude AI...' : 'Process Receipt'}
                 </Button>
               </form>
+              ) : (
+                <form onSubmit={handleFileSubmit} className="space-y-4">
+                  <FileUpload
+                    onFileSelect={setSelectedFile}
+                    accept="image/*"
+                    label="Upload Receipt Image"
+                    allowCamera={true}
+                  />
+
+                  {error && (
+                    <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+                      {error}
+                    </div>
+                  )}
+
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={loading || !selectedFile}
+                  >
+                    {loading ? 'Processing with Claude Vision...' : 'Process Receipt Photo'}
+                  </Button>
+                </form>
+              )}
             </CardContent>
           </Card>
 
