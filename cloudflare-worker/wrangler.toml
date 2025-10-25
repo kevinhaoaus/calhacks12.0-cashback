@@ -1,0 +1,11 @@
+name = "reclaim-email-processor"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[vars]
+API_URL = "https://your-app.vercel.app/api/webhooks/email"
+
+# Email handler configuration
+[[email_handlers]]
+route = "*@reclaim.ai"
+action = "worker"

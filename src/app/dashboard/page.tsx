@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import Link from 'next/link'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -13,6 +14,55 @@ export default async function DashboardPage() {
   if (!user) {
     redirect('/login')
   }
+
+  // Get user's purchases
+  const { data: purchases } = await supabase
+    .from('purchases')
+    .select(`
+      *,
+      retailers (
+        name,
+        default_return_days
+      )
+    `)
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(10)
+
+  // Get user settings for forwarding email
+  let { data: settings } = await supabase
+    .from('user_settings')
+    .select('forward_email')
+    .eq('user_id', user.id)
+    .single()
+
+  // Create user settings if they don't exist
+  if (!settings) {
+    const forwardEmail = `${user.id.slice(0, 8)}@reclaim.ai`
+    const { data: newSettings } = await supabase
+      .from('user_settings')
+      .insert({
+        user_id: user.id,
+        forward_email: forwardEmail,
+      })
+      .select()
+      .single()
+    settings = newSettings
+  }
+
+  // Calculate stats
+  const totalSavings = purchases?.reduce((sum, p) => {
+    return sum + (p.claude_analysis?.money_recovery_potential?.total || 0)
+  }, 0) || 0
+
+  const activePurchases = purchases?.filter(p => p.return_status === 'active').length || 0
+
+  const expiringSoon = purchases?.filter(p => {
+    if (!p.return_deadline) return false
+    const deadline = new Date(p.return_deadline)
+    const daysUntil = Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    return daysUntil <= 7 && daysUntil >= 0
+  }).length || 0
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -46,8 +96,14 @@ export default async function DashboardPage() {
               <CardDescription>Potential money recovered</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-green-600">$0.00</div>
-              <p className="text-sm text-gray-500 mt-2">No purchases tracked yet</p>
+              <div className="text-4xl font-bold text-green-600">
+                ${totalSavings.toFixed(2)}
+              </div>
+              <p className="text-sm text-gray-500 mt-2">
+                {purchases && purchases.length > 0
+                  ? `${purchases.length} purchase${purchases.length !== 1 ? 's' : ''} tracked`
+                  : 'No purchases tracked yet'}
+              </p>
             </CardContent>
           </Card>
 
@@ -57,8 +113,10 @@ export default async function DashboardPage() {
               <CardDescription>Items being tracked</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold">0</div>
-              <p className="text-sm text-gray-500 mt-2">Start by adding a receipt</p>
+              <div className="text-4xl font-bold">{activePurchases}</div>
+              <p className="text-sm text-gray-500 mt-2">
+                {activePurchases === 0 ? 'Start by adding a receipt' : 'Being monitored'}
+              </p>
             </CardContent>
           </Card>
 
@@ -68,46 +126,131 @@ export default async function DashboardPage() {
               <CardDescription>Return windows closing</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-orange-600">0</div>
-              <p className="text-sm text-gray-500 mt-2">No urgent actions needed</p>
+              <div className="text-4xl font-bold text-orange-600">{expiringSoon}</div>
+              <p className="text-sm text-gray-500 mt-2">
+                {expiringSoon === 0 ? 'No urgent actions needed' : 'Within 7 days'}
+              </p>
             </CardContent>
           </Card>
         </div>
 
-        <Card>
+        {/* Forwarding Email */}
+        <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Getting Started</CardTitle>
+            <CardTitle>Your Forwarding Email</CardTitle>
             <CardDescription>
-              Start recovering money from your purchases
+              Forward purchase receipts to this email to track them automatically
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="border-l-4 border-blue-500 pl-4 py-2">
-              <h3 className="font-semibold mb-1">Step 1: Connect Your Email</h3>
-              <p className="text-sm text-gray-600">
-                Forward your purchase receipts to your unique Reclaim.AI email address
-              </p>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <code className="flex-1 bg-gray-100 px-4 py-3 rounded-lg font-mono text-sm">
+                {settings?.forward_email || 'Loading...'}
+              </code>
+              <Button
+                onClick={() => {
+                  navigator.clipboard.writeText(settings?.forward_email || '')
+                }}
+              >
+                Copy
+              </Button>
             </div>
-            <div className="border-l-4 border-blue-500 pl-4 py-2">
-              <h3 className="font-semibold mb-1">Step 2: AI Analysis</h3>
-              <p className="text-sm text-gray-600">
-                Claude AI automatically extracts purchase details and analyzes return policies
-              </p>
-            </div>
-            <div className="border-l-4 border-blue-500 pl-4 py-2">
-              <h3 className="font-semibold mb-1">Step 3: Price Tracking</h3>
-              <p className="text-sm text-gray-600">
-                We monitor prices and alert you to potential refund opportunities
-              </p>
-            </div>
-            <div className="border-l-4 border-blue-500 pl-4 py-2">
-              <h3 className="font-semibold mb-1">Step 4: Automated Refunds</h3>
-              <p className="text-sm text-gray-600">
-                Generate and send refund requests with AI-powered emails
-              </p>
-            </div>
+            <p className="text-sm text-gray-600 mt-4">
+              Forward any purchase confirmation email to this address, and we'll automatically extract the details using AI.
+            </p>
           </CardContent>
         </Card>
+
+        {/* Recent Purchases */}
+        {purchases && purchases.length > 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Purchases</CardTitle>
+              <CardDescription>
+                Your tracked purchases and return windows
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {purchases.map((purchase) => {
+                  const deadline = purchase.return_deadline ? new Date(purchase.return_deadline) : null
+                  const daysUntil = deadline
+                    ? Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                    : null
+
+                  return (
+                    <div
+                      key={purchase.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                    >
+                      <div>
+                        <h3 className="font-semibold text-lg">{purchase.merchant_name}</h3>
+                        <p className="text-sm text-gray-600">
+                          ${purchase.total_amount.toFixed(2)} • {new Date(purchase.purchase_date).toLocaleDateString()}
+                        </p>
+                        {purchase.items && Array.isArray(purchase.items) && (
+                          <p className="text-sm text-gray-500 mt-1">
+                            {purchase.items.length} item{purchase.items.length !== 1 ? 's' : ''}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        {daysUntil !== null && (
+                          <>
+                            <p className={`font-semibold ${
+                              daysUntil < 7 ? 'text-orange-600' :
+                              daysUntil < 0 ? 'text-red-600' :
+                              'text-green-600'
+                            }`}>
+                              {daysUntil < 0 ? 'Expired' : `${daysUntil} days left`}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              Return by {deadline?.toLocaleDateString()}
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Getting Started</CardTitle>
+              <CardDescription>
+                Start recovering money from your purchases
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="border-l-4 border-blue-500 pl-4 py-2">
+                <h3 className="font-semibold mb-1">Step 1: Forward Your Receipts</h3>
+                <p className="text-sm text-gray-600">
+                  Copy your forwarding email above and forward any purchase receipt to it
+                </p>
+              </div>
+              <div className="border-l-4 border-blue-500 pl-4 py-2">
+                <h3 className="font-semibold mb-1">Step 2: AI Analysis</h3>
+                <p className="text-sm text-gray-600">
+                  Claude AI automatically extracts purchase details and analyzes return policies
+                </p>
+              </div>
+              <div className="border-l-4 border-blue-500 pl-4 py-2">
+                <h3 className="font-semibold mb-1">Step 3: Track & Save</h3>
+                <p className="text-sm text-gray-600">
+                  We monitor prices and alert you to potential refund opportunities
+                </p>
+              </div>
+              <div className="mt-4">
+                <Link href="/test">
+                  <Button>Test with Sample Receipt</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   )
