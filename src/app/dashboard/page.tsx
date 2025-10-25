@@ -38,6 +38,13 @@ export default async function DashboardPage() {
     .order('created_at', { ascending: false })
     .limit(10)
 
+  // Get unread notifications count
+  const { count: unreadCount } = await supabase
+    .from('notifications')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('read', false)
+
   // Get user settings for forwarding email
   let { data: settings } = await supabase
     .from('user_settings')
@@ -85,11 +92,23 @@ export default async function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold">Reclaim.AI</h1>
-            <form action="/api/auth/signout" method="post">
-              <Button type="submit" variant="outline">
-                Sign out
-              </Button>
-            </form>
+            <div className="flex items-center gap-4">
+              <Link href="/notifications">
+                <Button variant="outline" className="relative">
+                  Notifications
+                  {unreadCount && unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
+              <form action="/api/auth/signout" method="post">
+                <Button type="submit" variant="outline">
+                  Sign out
+                </Button>
+              </form>
+            </div>
           </div>
         </div>
       </header>
