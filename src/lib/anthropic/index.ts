@@ -5,8 +5,8 @@ export const anthropic = new Anthropic({
 });
 
 // Use Haiku for cost efficiency on simple tasks
-// Use Sonnet 4.5 for complex reasoning
+// Use Sonnet 3.5 for complex reasoning
 export const MODELS = {
-  HAIKU: 'claude-haiku-4-20250923',
-  SONNET: 'claude-sonnet-4.5-20250929',
+  HAIKU: 'claude-3-5-haiku-20241022',
+  SONNET: 'claude-3-5-sonnet-20241022',
 } as const;
