@@ -1,31 +1,46 @@
 # Reclaim.AI - Current Development Status
 
-## Current Task: Add Price Tracking Visibility to Dashboard ✅
+## Current Task: Auto-Suggest Product URLs for Price Tracking ✅
 
 ### Problem
-Price tracking is happening in the background, but users can't see:
-- What products are being tracked
-- Current prices vs original prices
-- Price history
-- Ability to remove items from tracking
+Users have no way to add products for price tracking. The price tracking infrastructure exists but there's no UI to start tracking products from purchases.
 
 ### Solution Implemented
 
-- [x] Created a new "Price Tracking" card section on the dashboard below the forwarding email card
-- [x] Created a client component for the price tracking list (`src/components/price-tracking-list.tsx`)
-- [x] Fetch all active price tracking records and display:
-  - Product name
-  - Product URL (truncated, with link)
-  - Original price
-  - Current price
-  - Lowest price seen
-  - Price change indicator (% change, colored with icons)
-  - Last checked timestamp
-  - "Remove" button for each item
-- [x] Implemented remove tracking functionality with optimistic UI updates
-- [x] Added empty state when no items are being tracked
+Implemented an AI-powered auto-suggest feature that:
+1. Adds "Track Price" button to each purchase in Recent Purchases (only shows if not already tracking)
+2. When clicked, uses Claude with Web Search to find the product URL automatically
+3. Shows up to 3 suggested URLs to user for confirmation
+4. Allows manual URL input as fallback
+5. Starts price tracking once confirmed
+6. Shows success state and refreshes dashboard
 
-### Changes Made
+### Files Created
+
+- `src/app/api/suggest-product-url/route.ts` - API endpoint using Claude + Web Search to find product URLs
+- `src/components/track-price-dialog.tsx` - Modal dialog for URL suggestions and confirmation
+- `src/components/purchases-list.tsx` - Client component with Track Price buttons
+
+### Files Modified
+
+- `src/app/dashboard/page.tsx` - Uses new PurchasesList component
+
+### Features
+
+- **AI-Powered URL Discovery**: Uses Claude Sonnet 4.5 with web_search tool to find product pages
+- **Smart Filtering**: Only shows URLs from supported retailers (Amazon, Walmart, Target, Best Buy, Home Depot, eBay)
+- **Confidence Scoring**: Each suggestion has a confidence level (high/medium/low)
+- **Manual Override**: Users can enter custom URLs if suggestions aren't accurate
+- **Auto-fetch**: Suggestions load automatically when dialog opens
+- **Error Handling**: Graceful fallback if AI search fails
+- **Success Feedback**: Visual confirmation when tracking starts
+- **Conditional Display**: Track Price button only shows on purchases not already being tracked
+
+---
+
+## Recently Completed
+
+### Price Tracking Visibility ✅
 
 **Files Created:**
 - `src/components/price-tracking-list.tsx` - Client component for displaying and managing price tracking
@@ -33,14 +48,13 @@ Price tracking is happening in the background, but users can't see:
 **Files Modified:**
 - `src/app/dashboard/page.tsx` - Added Price Tracking card section
 
-### Features
+**Features:**
 - Responsive grid layout showing all price tracking details
 - Color-coded price changes (green for drops, red for increases)
 - Trend icons (up/down/neutral arrows)
 - Clickable product URLs that open in new tab
 - One-click remove with optimistic UI updates
 - Loading states and empty states
-- Consistent design with existing dashboard
 
 ---
 
@@ -82,10 +96,9 @@ Price tracking is happening in the background, but users can't see:
 
 ## Current Branch Status
 
-**Main Branch** (current):
-- Merged kevin branch
-- All features from both branches
-- Latest design system
+**Kevin Branch** (current):
+- Price tracking visibility feature
+- All previous features
 
 ## Architecture Overview
 
@@ -99,6 +112,7 @@ Price tracking is happening in the background, but users can't see:
 - `src/lib/bright-data/price-tracker.ts` - Price tracking logic
 - `src/app/api/track-price/route.ts` - Price tracking API
 - `src/app/api/cron/check-prices/route.ts` - Daily price checks
+- `src/components/price-tracking-list.tsx` - Price tracking display
 
 ### Database Schema
 - retailers

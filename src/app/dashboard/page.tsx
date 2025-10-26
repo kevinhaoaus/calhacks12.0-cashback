@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CopyButton } from '@/components/copy-button'
 import { PriceTrackingList } from '@/components/price-tracking-list'
+import { PurchasesList } from '@/components/purchases-list'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
@@ -228,54 +229,7 @@ export default async function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {purchases.map((purchase) => {
-                  const deadline = purchase.return_deadline ? new Date(purchase.return_deadline) : null
-                  const daysUntil = deadline
-                    ? Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-                    : null
-
-                  return (
-                    <div
-                      key={purchase.id}
-                      className="flex items-center justify-between p-4 border border-[#E0DEDB] rounded-lg hover:bg-[rgba(55,50,47,0.02)] transition-colors"
-                    >
-                      <div>
-                        <h3 className="font-semibold text-lg text-[#37322F] font-sans">{purchase.merchant_name}</h3>
-                        <p className="text-sm text-[#605A57] font-sans">
-                          ${purchase.total_amount.toFixed(2)} • {new Date(purchase.purchase_date).toLocaleDateString()}
-                        </p>
-                        {purchase.items && Array.isArray(purchase.items) && (
-                          <p className="text-sm text-[#605A57] mt-1 font-sans">
-                            {purchase.items.length} item{purchase.items.length !== 1 ? 's' : ''}
-                          </p>
-                        )}
-                        {purchase.price_tracking?.[0]?.price_drop_detected && (
-                          <p className="text-sm text-[#2563EB] font-semibold mt-1 font-sans">
-                            💰 Price dropped ${purchase.price_tracking[0].price_drop_amount?.toFixed(2)}!
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        {daysUntil !== null && (
-                          <>
-                            <p className={`font-semibold font-sans ${
-                              daysUntil < 7 ? 'text-[#EA580C]' :
-                              daysUntil < 0 ? 'text-[#B44D12]' :
-                              'text-[#16A34A]'
-                            }`}>
-                              {daysUntil < 0 ? 'Expired' : `${daysUntil} days left`}
-                            </p>
-                            <p className="text-sm text-[#605A57] font-sans">
-                              Return by {deadline?.toLocaleDateString()}
-                            </p>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+              <PurchasesList purchases={purchases} />
             </CardContent>
           </Card>
         ) : (
