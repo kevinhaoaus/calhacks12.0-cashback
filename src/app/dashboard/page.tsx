@@ -80,7 +80,7 @@ export default async function DashboardPage() {
     p.price_tracking?.[0]?.price_drop_detected
   ).length || 0
 
-  const activePurchases = purchases?.filter(p => p.return_status === 'active').length || 0
+  const activePurchases = purchases?.filter(p => p.price_tracking?.[0]?.tracking_active === true).length || 0
 
   const expiringSoon = purchases?.filter(p => {
     if (!p.return_deadline) return false
