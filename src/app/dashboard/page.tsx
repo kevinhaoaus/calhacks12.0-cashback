@@ -124,19 +124,37 @@ export default async function DashboardPage() {
   const refundsSent = refundRequests?.filter(r => r.email_sent === true).length || 0
   const refundsApproved = refundRequests?.filter(r => r.status === 'approved' || r.status === 'completed').length || 0
 
-  // Calculate stats including price drops and refunds
+  // Calculate potential savings from price drops
   const potentialSavings = purchases?.reduce((sum, p) => {
-    const claudeSavings = p.claude_analysis?.money_recovery_potential?.total || 0
-    const priceDropSavings = p.price_tracking?.[0]?.price_drop_amount || 0
-    return sum + claudeSavings + priceDropSavings
+    // Only count price drop amounts where a drop was detected
+    if (p.price_tracking?.[0]?.price_drop_detected && p.price_tracking?.[0]?.price_drop_amount) {
+      return sum + p.price_tracking[0].price_drop_amount
+    }
+    return sum
   }, 0) || 0
 
   // Total savings = realized (approved refunds) + potential (price drops)
   const totalSavings = realizedSavings + potentialSavings
 
+  // Count purchases with price drops detected
   const priceDrops = purchases?.filter(p =>
-    p.price_tracking?.[0]?.price_drop_detected
+    p.price_tracking?.[0]?.price_drop_detected === true
   ).length || 0
+
+  console.log('Calculated metrics:', {
+    realizedSavings,
+    potentialSavings,
+    totalSavings,
+    priceDrops,
+    priceTrackingData: purchases?.map(p => ({
+      merchant: p.merchant_name,
+      hasPriceTracking: !!p.price_tracking?.[0],
+      priceDropDetected: p.price_tracking?.[0]?.price_drop_detected,
+      priceDropAmount: p.price_tracking?.[0]?.price_drop_amount,
+      originalPrice: p.price_tracking?.[0]?.original_price,
+      currentPrice: p.price_tracking?.[0]?.current_price
+    }))
+  })
 
   // Count items with active price tracking
   const activePurchases = purchases?.filter(p => p.price_tracking?.[0]?.tracking_active === true).length || 0

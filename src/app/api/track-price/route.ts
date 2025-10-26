@@ -47,6 +47,20 @@ export async function POST(request: NextRequest) {
     // Get initial price using Bright Data (URL is now validated)
     const priceResult = await checkProductPrice(product_url);
 
+    // Check for price drop immediately (5% threshold)
+    const originalPrice = purchase.total_amount;
+    const currentPrice = priceResult.current_price;
+    const priceDrop = currentPrice < originalPrice * 0.95;
+    const priceDropAmount = priceDrop ? originalPrice - currentPrice : null;
+
+    console.log('Initial price check:', {
+      originalPrice,
+      currentPrice,
+      priceDrop,
+      priceDropAmount,
+      threshold: originalPrice * 0.95
+    });
+
     // Create price tracking record
     const { data: tracking, error } = await supabase
       .from('price_tracking')
@@ -54,28 +68,45 @@ export async function POST(request: NextRequest) {
         purchase_id,
         product_url,
         product_name: priceResult.title,
-        original_price: purchase.total_amount,
-        current_price: priceResult.current_price,
-        lowest_price: priceResult.current_price,
+        original_price: originalPrice,
+        current_price: currentPrice,
+        lowest_price: currentPrice,
         price_history: [
           {
             date: new Date().toISOString(),
-            price: priceResult.current_price,
+            price: currentPrice,
             available: priceResult.available,
           },
         ],
         tracking_active: true,
         last_checked: new Date().toISOString(),
+        price_drop_detected: priceDrop,
+        price_drop_amount: priceDropAmount,
+        price_drop_date: priceDrop ? new Date().toISOString() : null,
       })
       .select()
       .single();
 
     if (error) throw error;
 
+    // Create notification if price already dropped
+    if (priceDrop) {
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        purchase_id,
+        type: 'price_drop',
+        title: 'Price Drop Detected!',
+        message: `${priceResult.title} is now $${currentPrice.toFixed(2)} (was $${originalPrice.toFixed(2)}). Save $${priceDropAmount!.toFixed(2)}!`,
+        priority: 'high',
+      });
+    }
+
     return NextResponse.json({
       success: true,
       tracking,
-      initial_price: priceResult.current_price,
+      initial_price: currentPrice,
+      price_drop_detected: priceDrop,
+      price_drop_amount: priceDropAmount,
     });
   } catch (error) {
     console.error('Price tracking failed:', error);
