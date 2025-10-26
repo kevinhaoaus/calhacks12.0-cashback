@@ -22,7 +22,7 @@ export default function DocumentationSection() {
   const cards = [
     {
       title: "Smart Receipt Scanning",
-      description: "Automatically scan receipts and emails to track\nall your purchases in one place.",
+      description: "Upload receipt photos or paste text to track\nall your purchases in one place.",
       image: "/modern-dashboard-interface-with-data-visualization.jpg",
     },
     {

@@ -273,27 +273,6 @@ export default async function DashboardPage() {
           </Card>
         </div>
 
-        {/* Forwarding Email */}
-        <Card className="mb-8 bg-white border-[rgba(55,50,47,0.12)] shadow-[0px_0px_0px_0.9px_rgba(0,0,0,0.08)]">
-          <CardHeader>
-            <CardTitle className="text-[#37322F] font-sans font-semibold">Your Forwarding Email</CardTitle>
-            <CardDescription className="text-[#605A57] font-sans">
-              Forward purchase receipts to this email to track them automatically
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <code className="flex-1 bg-[rgba(55,50,47,0.05)] border border-[#E0DEDB] px-4 py-3 rounded-lg font-mono text-sm text-[#37322F]">
-                {settings?.forward_email || 'Loading...'}
-              </code>
-              <CopyButton text={settings?.forward_email || ''} />
-            </div>
-            <p className="text-sm text-[#605A57] mt-4 font-sans">
-              Forward any purchase confirmation email to this address, and we'll automatically extract the details using AI.
-            </p>
-          </CardContent>
-        </Card>
-
         {/* Add Receipt */}
         <Card className="mb-8 bg-white border-[rgba(55,50,47,0.12)] shadow-[0px_0px_0px_0.9px_rgba(0,0,0,0.08)]">
           <CardHeader>
@@ -343,9 +322,9 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="border-l-4 border-l-[#37322F] pl-4 py-2">
-                <h3 className="font-semibold mb-1 text-[#37322F] font-sans">Step 1: Forward Your Receipts</h3>
+                <h3 className="font-semibold mb-1 text-[#37322F] font-sans">Step 1: Upload Your Receipts</h3>
                 <p className="text-sm text-[#605A57] font-sans">
-                  Copy your forwarding email above and forward any purchase receipt to it
+                  Upload a photo or paste text from your purchase receipts above
                 </p>
               </div>
               <div className="border-l-4 border-l-[#37322F] pl-4 py-2">

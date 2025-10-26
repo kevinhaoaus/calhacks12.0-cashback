@@ -11,7 +11,7 @@ const faqData: FAQItem[] = [
   {
     question: "How does FairVal find my purchases?",
     answer:
-      "FairVal automatically scans your email inbox for receipts and order confirmations. It extracts purchase details, return windows, and product information so you never have to manually track anything.",
+      "Simply upload a photo or paste text from your purchase receipts. FairVal extracts purchase details, return windows, and product information using AI so you never have to manually track anything.",
   },
   {
     question: "What happens when a price drops?",
@@ -24,9 +24,9 @@ const faqData: FAQItem[] = [
       "Claude AI analyzes your purchase, the store's return policy, and the reason for your refund. It then generates a pre-filled, persuasive refund request that you can review and submit via Postman with one click.",
   },
   {
-    question: "Is my email and purchase data secure?",
+    question: "Is my purchase data secure?",
     answer:
-      "Absolutely. We use enterprise-grade encryption, never store your email password, and only access receipt data with your explicit permission. Your purchase information is encrypted and stored securely.",
+      "Absolutely. We use enterprise-grade encryption and your purchase information is encrypted and stored securely. We never share your data with third parties.",
   },
   {
     question: "Which stores and retailers does FairVal support?",
