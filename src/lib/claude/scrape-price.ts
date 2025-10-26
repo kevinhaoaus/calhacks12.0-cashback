@@ -234,8 +234,9 @@ CRITICAL RULES:
 - If you find a FULL one-time purchase price, put it in "price" and set monthly_price to null
 - If you ONLY find monthly/installment prices (e.g., "$33/mo", "per month"), extract:
   * monthly_price: the monthly payment amount
-  * payment_months: number of months (look for "24 months", "24-month", "over 24 mo", etc.)
-  * If months not specified, use 24 as default for phones/electronics
+  * payment_months: number of months (look for "24 months", "24-month", "over 24 mo", "for 24 months", etc.)
+  * ONLY set payment_months if you can find it explicitly on the page
+  * If months not found, set payment_months to null
 - Common patterns: "$33/mo for 24 months", "$33.25/month", "24 monthly payments of $33"
 - currency defaults to "USD"
 - available defaults to true`,
@@ -264,10 +265,10 @@ CRITICAL RULES:
     const title = extracted.title || 'Unknown Product';
     let price = extracted.price || 0;
 
-    // If we have monthly price info, calculate the full price
-    if (extracted.monthly_price && extracted.monthly_price > 0) {
+    // If we have monthly price info AND number of months, calculate the full price
+    if (extracted.monthly_price && extracted.monthly_price > 0 && extracted.payment_months && extracted.payment_months > 0) {
       const monthlyPrice = extracted.monthly_price;
-      const months = extracted.payment_months || 24; // Default to 24 months if not specified
+      const months = extracted.payment_months;
       const calculatedPrice = monthlyPrice * months;
 
       console.log(`📊 Calculated full price from monthly: $${monthlyPrice}/mo × ${months} months = $${calculatedPrice}`);
@@ -276,6 +277,8 @@ CRITICAL RULES:
       if (price === 0 || calculatedPrice > price) {
         price = calculatedPrice;
       }
+    } else if (extracted.monthly_price && extracted.monthly_price > 0 && !extracted.payment_months) {
+      console.warn(`⚠️ Found monthly price $${extracted.monthly_price}/mo but no payment_months specified. Cannot calculate full price.`);
     }
 
     return {
