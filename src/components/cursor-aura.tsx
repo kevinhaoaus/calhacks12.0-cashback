@@ -1,8 +1,10 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { usePathname } from "next/navigation"
 
 export function CursorAura() {
+  const pathname = usePathname()
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const [isVisible, setIsVisible] = useState(false)
   const rafRef = useRef<number | undefined>(undefined)
@@ -45,6 +47,11 @@ export function CursorAura() {
       }
     }
   }, [isVisible])
+
+  // Only show on home page
+  if (pathname !== "/") {
+    return null
+  }
 
   if (!isVisible) return null
 
