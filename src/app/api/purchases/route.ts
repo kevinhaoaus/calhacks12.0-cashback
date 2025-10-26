@@ -184,3 +184,61 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+/**
+ * DELETE /api/purchases - Delete a purchase and its associated price tracking
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const purchaseId = searchParams.get('id');
+
+    if (!purchaseId) {
+      return NextResponse.json({ error: 'Missing purchase ID' }, { status: 400 });
+    }
+
+    // Verify purchase belongs to user
+    const { data: purchase } = await supabase
+      .from('purchases')
+      .select('*')
+      .eq('id', purchaseId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (!purchase) {
+      return NextResponse.json({ error: 'Purchase not found' }, { status: 404 });
+    }
+
+    // Delete associated price tracking first (if any)
+    await supabase
+      .from('price_tracking')
+      .delete()
+      .eq('purchase_id', purchaseId);
+
+    // Delete the purchase
+    const { error } = await supabase
+      .from('purchases')
+      .delete()
+      .eq('id', purchaseId);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Failed to delete purchase:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete purchase', details: String(error) },
+      { status: 500 }
+    );
+  }
+}

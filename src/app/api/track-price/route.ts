@@ -139,10 +139,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Tracking not found' }, { status: 404 });
     }
 
-    // Deactivate tracking
+    // Actually delete the tracking record
     const { error } = await supabase
       .from('price_tracking')
-      .update({ tracking_active: false })
+      .delete()
       .eq('id', trackingId);
 
     if (error) throw error;

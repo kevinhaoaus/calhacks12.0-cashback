@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { TrendingUp } from 'lucide-react'
+import { TrendingUp, X } from 'lucide-react'
 import { TrackPriceDialog } from '@/components/track-price-dialog'
 
 interface Purchase {
@@ -22,13 +22,50 @@ interface PurchasesListProps {
   purchases: Purchase[]
 }
 
-export function PurchasesList({ purchases }: PurchasesListProps) {
+export function PurchasesList({ purchases: initialPurchases }: PurchasesListProps) {
+  const [purchases, setPurchases] = useState<Purchase[]>(initialPurchases)
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  // Sync local state with prop updates
+  useEffect(() => {
+    setPurchases(initialPurchases)
+  }, [initialPurchases])
 
   const handleTrackPrice = (purchase: Purchase) => {
     setSelectedPurchase(purchase)
     setDialogOpen(true)
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this purchase? This will also remove any price tracking for this item.')) {
+      return
+    }
+
+    setDeletingId(id)
+
+    // Optimistic update
+    setPurchases(prev => prev.filter(p => p.id !== id))
+
+    try {
+      const response = await fetch(`/api/purchases?id=${id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        // Revert on error
+        setPurchases(initialPurchases)
+        alert('Failed to delete purchase')
+      }
+    } catch (error) {
+      console.error('Failed to delete purchase:', error)
+      // Revert on error
+      setPurchases(initialPurchases)
+      alert('Failed to delete purchase')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   const getFirstItemName = (items: any[]) => {
@@ -77,17 +114,29 @@ export function PurchasesList({ purchases }: PurchasesListProps) {
                     )}
                   </div>
 
-                  {!hasTracking(purchase) && (
+                  <div className="flex gap-2 flex-shrink-0">
+                    {!hasTracking(purchase) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleTrackPrice(purchase)}
+                        className="border-[#37322F] text-[#37322F] hover:bg-[#37322F] hover:text-white font-sans"
+                      >
+                        <TrendingUp className="w-4 h-4 mr-1" />
+                        Track Price
+                      </Button>
+                    )}
                     <Button
                       size="sm"
-                      variant="outline"
-                      onClick={() => handleTrackPrice(purchase)}
-                      className="border-[#37322F] text-[#37322F] hover:bg-[#37322F] hover:text-white font-sans flex-shrink-0"
+                      variant="ghost"
+                      onClick={() => handleDelete(purchase.id)}
+                      disabled={deletingId === purchase.id}
+                      className="text-[#B44D12] hover:text-[#EA580C] hover:bg-[#FEF3F2]"
+                      title="Delete purchase"
                     >
-                      <TrendingUp className="w-4 h-4 mr-1" />
-                      Track Price
+                      <X className="w-4 h-4" />
                     </Button>
-                  )}
+                  </div>
                 </div>
               </div>
 
