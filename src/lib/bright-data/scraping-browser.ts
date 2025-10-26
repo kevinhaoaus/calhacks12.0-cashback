@@ -1,7 +1,12 @@
 import puppeteer, { Browser, Page } from 'puppeteer-core';
 
 const BRIGHT_DATA_CUSTOMER_ID = process.env.BRIGHT_DATA_CUSTOMER_ID!;
-const BRIGHT_DATA_SBR_PASSWORD = process.env.BRIGHT_DATA_SBR_PASSWORD!;
+// Support both SBR and SBP (typo in env var name)
+const BRIGHT_DATA_SBR_PASSWORD = process.env.BRIGHT_DATA_SBR_PASSWORD || process.env.BRIGHT_DATA_SBP_PASSWORD!;
+
+if (!BRIGHT_DATA_CUSTOMER_ID || !BRIGHT_DATA_SBR_PASSWORD) {
+  console.warn('Bright Data credentials not configured. Customer ID or Password missing.');
+}
 
 /**
  * Bright Data Scraping Browser WebSocket endpoint

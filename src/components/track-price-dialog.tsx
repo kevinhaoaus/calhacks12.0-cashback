@@ -235,10 +235,10 @@ export function TrackPriceDialog({
                             href={suggestion.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-[#2563EB] hover:underline flex items-center gap-1 font-sans"
+                            className="text-xs text-[#2563EB] hover:underline flex items-center gap-1 font-sans break-all"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <span className="truncate">{suggestion.url}</span>
+                            <span className="break-all">{suggestion.url}</span>
                             <ExternalLink className="w-3 h-3 flex-shrink-0" />
                           </a>
                         </div>
