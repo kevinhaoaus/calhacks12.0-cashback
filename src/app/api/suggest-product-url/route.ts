@@ -50,7 +50,6 @@ export async function POST(request: NextRequest) {
         {
           type: 'web_search_20250305' as const,
           name: 'web_search',
-          display_name: 'Web Search',
         },
       ],
       messages: [
