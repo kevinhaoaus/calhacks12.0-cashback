@@ -176,21 +176,29 @@ export function AddReceipt() {
   }
 
   const handleConfirmReceipt = async (confirmedData: ReceiptData) => {
-    // Save to database
-    const response = await fetch('/api/purchases', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        receiptData: confirmedData,
-        skipExtraction: true, // We already have the extracted data
-      }),
-    })
+    try {
+      // Save to database
+      const response = await fetch('/api/purchases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          receiptData: confirmedData,
+          skipExtraction: true, // We already have the extracted data
+        }),
+      })
 
-    if (!response.ok) {
-      throw new Error('Failed to save receipt')
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error('Save receipt error:', data)
+        throw new Error(data.error || 'Failed to save receipt')
+      }
+
+      // Success! Dialog will handle the UI feedback and page reload
+    } catch (error) {
+      console.error('Error in handleConfirmReceipt:', error)
+      throw error // Re-throw so dialog can handle it
     }
-
-    // Success! Dialog will handle the UI feedback and page reload
   }
 
   const handleCancelConfirmation = () => {

@@ -162,64 +162,24 @@ export async function POST(request: NextRequest) {
 
     let retailer = retailers && retailers.length > 0 ? retailers[0] : null;
 
-    // If retailer doesn't have return policy text, scrape it
-    if (retailer && !retailer.return_policy_text) {
-      console.log(`Retailer ${retailer.name} missing policy, scraping...`);
-      try {
-        const { scrapeReturnPolicy } = await import('@/lib/claude/scrape-return-policy');
-        const policyData = await scrapeReturnPolicy(retailer.name, retailer.domain || undefined);
-
-        // Update retailer with scraped policy
-        const { data: updatedRetailer } = await supabase
-          .from('retailers')
-          .update({
-            return_policy_url: policyData.policy_url,
-            return_policy_text: policyData.policy_text,
-            default_return_days: policyData.return_days,
-            has_price_match: policyData.has_price_match,
-            price_match_days: policyData.price_match_days,
-            policy_last_scraped: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', retailer.id)
-          .select()
-          .single();
-
-        retailer = updatedRetailer || retailer;
-        console.log(`Successfully scraped and saved policy for ${retailer.name}`);
-      } catch (error) {
-        console.error('Failed to scrape return policy:', error);
-        // Continue without policy - don't fail the whole purchase
-      }
-    }
-
-    // If retailer doesn't exist at all, create it with scraped policy
+    // If retailer doesn't exist, create a basic one without policy (skip scraping for speed)
     if (!retailer) {
-      console.log(`Creating new retailer for ${receiptData.merchant}...`);
+      console.log(`Creating basic retailer entry for ${receiptData.merchant}...`);
       try {
-        const { scrapeReturnPolicy } = await import('@/lib/claude/scrape-return-policy');
-        const policyData = await scrapeReturnPolicy(receiptData.merchant);
-
-        // Create new retailer
         const { data: newRetailer } = await supabase
           .from('retailers')
           .insert({
             name: receiptData.merchant,
-            domain: policyData.merchant_domain,
-            return_policy_url: policyData.policy_url,
-            return_policy_text: policyData.policy_text,
-            default_return_days: policyData.return_days,
-            has_price_match: policyData.has_price_match,
-            price_match_days: policyData.price_match_days,
-            policy_last_scraped: new Date().toISOString(),
+            default_return_days: 30, // Default assumption
+            has_price_match: false,
           })
           .select()
           .single();
 
         retailer = newRetailer;
-        console.log(`Successfully created retailer ${receiptData.merchant} with policy`);
+        console.log(`Created basic retailer entry for ${receiptData.merchant}`);
       } catch (error) {
-        console.error('Failed to create retailer with policy:', error);
+        console.error('Failed to create retailer:', error);
         // Continue without retailer
       }
     }
@@ -230,19 +190,9 @@ export async function POST(request: NextRequest) {
     const returnDeadline = new Date(purchaseDate);
     returnDeadline.setDate(returnDeadline.getDate() + returnDays);
 
-    // Analyze return eligibility (should now work for all retailers!)
+    // Skip slow policy scraping and AI analysis for faster user response
+    // These can be done later via a background job or cron
     let claudeAnalysis = null;
-    if (retailer?.return_policy_text) {
-      claudeAnalysis = await analyzeReturnEligibility(
-        {
-          merchant: receiptData.merchant,
-          purchaseDate: receiptData.date,
-          totalAmount: receiptData.total,
-          items: receiptData.items,
-        },
-        retailer.return_policy_text
-      );
-    }
 
     // Save purchase
     const { data: purchase, error } = await supabase
