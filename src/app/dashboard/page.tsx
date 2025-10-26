@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CopyButton } from '@/components/copy-button'
+import { PriceTrackingList } from '@/components/price-tracking-list'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
@@ -201,6 +202,19 @@ export default async function DashboardPage() {
             <p className="text-sm text-[#605A57] mt-4 font-sans">
               Forward any purchase confirmation email to this address, and we'll automatically extract the details using AI.
             </p>
+          </CardContent>
+        </Card>
+
+        {/* Price Tracking */}
+        <Card className="mb-8 bg-white border-[rgba(55,50,47,0.12)] shadow-[0px_0px_0px_0.9px_rgba(0,0,0,0.08)]">
+          <CardHeader>
+            <CardTitle className="text-[#37322F] font-sans font-semibold">Price Tracking</CardTitle>
+            <CardDescription className="text-[#605A57] font-sans">
+              Products being monitored for price drops
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PriceTrackingList />
           </CardContent>
         </Card>
 
