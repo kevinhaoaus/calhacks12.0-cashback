@@ -339,13 +339,6 @@ export default async function DashboardPage() {
                   We monitor prices and alert you to potential refund opportunities
                 </p>
               </div>
-              <div className="mt-4">
-                <Link href="/test">
-                  <Button className="bg-[#37322F] hover:bg-[#2A2520] text-white font-medium rounded-full shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] font-sans">
-                    Test with Sample Receipt
-                  </Button>
-                </Link>
-              </div>
             </CardContent>
           </Card>
         )}
