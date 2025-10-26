@@ -48,6 +48,12 @@ export default async function DashboardPage() {
     .eq('user_id', user.id)
     .eq('read', false)
 
+  // Get refund requests data
+  const { data: refundRequests } = await supabase
+    .from('refund_requests')
+    .select('*')
+    .eq('user_id', user.id)
+
   // Get user settings for forwarding email
   let { data: settings } = await supabase
     .from('user_settings')
@@ -69,17 +75,33 @@ export default async function DashboardPage() {
     settings = newSettings
   }
 
-  // Calculate stats including price drops
-  const totalSavings = purchases?.reduce((sum, p) => {
+  // Calculate refund metrics
+  const realizedSavings = refundRequests?.reduce((sum, r) => {
+    // Only count approved or completed refunds as realized
+    if (r.status === 'approved' || r.status === 'completed') {
+      return sum + (r.refund_amount || 0)
+    }
+    return sum
+  }, 0) || 0
+
+  const refundsSent = refundRequests?.filter(r => r.email_sent === true).length || 0
+  const refundsApproved = refundRequests?.filter(r => r.status === 'approved' || r.status === 'completed').length || 0
+
+  // Calculate stats including price drops and refunds
+  const potentialSavings = purchases?.reduce((sum, p) => {
     const claudeSavings = p.claude_analysis?.money_recovery_potential?.total || 0
     const priceDropSavings = p.price_tracking?.[0]?.price_drop_amount || 0
     return sum + claudeSavings + priceDropSavings
   }, 0) || 0
 
+  // Total savings = realized (approved refunds) + potential (price drops)
+  const totalSavings = realizedSavings + potentialSavings
+
   const priceDrops = purchases?.filter(p =>
     p.price_tracking?.[0]?.price_drop_detected
   ).length || 0
 
+  // Count items with active price tracking
   const activePurchases = purchases?.filter(p => p.price_tracking?.[0]?.tracking_active === true).length || 0
 
   const expiringSoon = purchases?.filter(p => {
@@ -132,29 +154,34 @@ export default async function DashboardPage() {
           <Card className="bg-white border-[rgba(55,50,47,0.12)] shadow-[0px_0px_0px_0.9px_rgba(0,0,0,0.08)]">
             <CardHeader>
               <CardTitle className="text-[#37322F] font-sans font-semibold">Total Savings</CardTitle>
-              <CardDescription className="text-[#605A57] font-sans">Potential money recovered</CardDescription>
+              <CardDescription className="text-[#605A57] font-sans">Realized + Potential</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-4xl font-bold text-[#16A34A]">
                 ${totalSavings.toFixed(2)}
               </div>
-              <p className="text-sm text-[#605A57] mt-2 font-sans">
-                {purchases && purchases.length > 0
-                  ? `${purchases.length} purchase${purchases.length !== 1 ? 's' : ''} tracked`
-                  : 'No purchases tracked yet'}
-              </p>
+              <div className="mt-2 space-y-1">
+                <p className="text-xs text-[#16A34A] font-sans font-semibold">
+                  ${realizedSavings.toFixed(2)} realized
+                </p>
+                <p className="text-xs text-[#605A57] font-sans">
+                  ${potentialSavings.toFixed(2)} potential
+                </p>
+              </div>
             </CardContent>
           </Card>
 
           <Card className="bg-white border-[rgba(55,50,47,0.12)] shadow-[0px_0px_0px_0.9px_rgba(0,0,0,0.08)]">
             <CardHeader>
-              <CardTitle className="text-[#37322F] font-sans font-semibold">Active Purchases</CardTitle>
-              <CardDescription className="text-[#605A57] font-sans">Items being tracked</CardDescription>
+              <CardTitle className="text-[#37322F] font-sans font-semibold">Items Tracked</CardTitle>
+              <CardDescription className="text-[#605A57] font-sans">Active price monitoring</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-4xl font-bold text-[#37322F]">{activePurchases}</div>
               <p className="text-sm text-[#605A57] mt-2 font-sans">
-                {activePurchases === 0 ? 'Start by adding a receipt' : 'Being monitored'}
+                {activePurchases === 0
+                  ? 'Start by adding a receipt'
+                  : `${activePurchases} item${activePurchases !== 1 ? 's' : ''} being monitored`}
               </p>
             </CardContent>
           </Card>
@@ -162,7 +189,7 @@ export default async function DashboardPage() {
           <Card className="bg-white border-[rgba(55,50,47,0.12)] shadow-[0px_0px_0px_0.9px_rgba(0,0,0,0.08)]">
             <CardHeader>
               <CardTitle className="text-[#37322F] font-sans font-semibold">Price Drops</CardTitle>
-              <CardDescription className="text-[#605A57] font-sans">Price drops detected</CardDescription>
+              <CardDescription className="text-[#605A57] font-sans">Opportunities found</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-4xl font-bold text-[#2563EB]">{priceDrops}</div>
@@ -174,14 +201,19 @@ export default async function DashboardPage() {
 
           <Card className="bg-white border-[rgba(55,50,47,0.12)] shadow-[0px_0px_0px_0.9px_rgba(0,0,0,0.08)]">
             <CardHeader>
-              <CardTitle className="text-[#37322F] font-sans font-semibold">Expiring Soon</CardTitle>
-              <CardDescription className="text-[#605A57] font-sans">Return windows closing</CardDescription>
+              <CardTitle className="text-[#37322F] font-sans font-semibold">Refunds</CardTitle>
+              <CardDescription className="text-[#605A57] font-sans">Requests submitted</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-[#EA580C]">{expiringSoon}</div>
-              <p className="text-sm text-[#605A57] mt-2 font-sans">
-                {expiringSoon === 0 ? 'No urgent actions needed' : 'Within 7 days'}
-              </p>
+              <div className="text-4xl font-bold text-[#EA580C]">{refundsSent}</div>
+              <div className="mt-2 space-y-1">
+                <p className="text-xs text-[#16A34A] font-sans font-semibold">
+                  {refundsApproved} approved
+                </p>
+                <p className="text-xs text-[#605A57] font-sans">
+                  ${realizedSavings.toFixed(2)} recovered
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>

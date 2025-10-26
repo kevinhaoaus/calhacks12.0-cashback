@@ -128,3 +128,62 @@ After applying the SQL fix:
 1. Run the SQL migration in Supabase (takes 5 seconds)
 2. Test the "Mark as Sent" functionality
 3. Confirm the error is resolved
+
+---
+
+# Dashboard Enhancement: Better Tracking Metrics
+
+## Completed ✅
+
+Enhanced the dashboard to show clearer tracking metrics and savings breakdown.
+
+### Changes Made
+
+**Updated** `src/app/dashboard/page.tsx`:
+
+1. **Added refund requests query**
+   - Queries all user's refund requests from database
+   - Used to calculate actual realized savings
+
+2. **Enhanced savings calculations**
+   - `realizedSavings`: Actual money recovered from approved/completed refunds
+   - `potentialSavings`: Opportunities from price drops + Claude analysis
+   - `totalSavings`: Combined realized + potential
+
+3. **Updated dashboard cards**
+   - **Total Savings**: Shows breakdown of realized vs. potential savings
+   - **Items Tracked**: Renamed from "Active Purchases", shows count of items with active price monitoring
+   - **Price Drops**: Shows opportunities detected
+   - **Refunds**: New card showing requests sent, approved count, and money recovered
+
+### New Dashboard Metrics
+
+```
+┌────────────────────┐  ┌────────────────────┐
+│ Total Savings      │  │ Items Tracked      │
+│ $450.00            │  │ 12                 │
+│ $320 realized      │  │ Price monitoring   │
+│ $130 potential     │  │ active             │
+└────────────────────┘  └────────────────────┘
+
+┌────────────────────┐  ┌────────────────────┐
+│ Price Drops        │  │ Refunds            │
+│ 8                  │  │ 5 sent             │
+│ Opportunities      │  │ 3 approved         │
+│                    │  │ $320 recovered     │
+└────────────────────┘  └────────────────────┘
+```
+
+### Impact
+
+- ✅ Users can now see items actively being tracked
+- ✅ Clear breakdown of realized vs. potential savings
+- ✅ Track refund request progress (sent → approved → recovered)
+- ✅ Real-time updates as refunds change status
+- ✅ Better transparency on actual money recovered
+
+All metrics update automatically when:
+- New price tracking is added
+- Price drops are detected
+- Refund requests are sent
+- Refunds are approved/completed
