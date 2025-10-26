@@ -152,7 +152,7 @@ export async function scrapeProductPrice(
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout (increased for slow sites)
 
         const response = await fetch(productUrl, {
           signal: controller.signal,
