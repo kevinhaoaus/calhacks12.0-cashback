@@ -46,6 +46,7 @@ export function TrackPriceDialog({
   const [tracking, setTracking] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [trackingStatus, setTrackingStatus] = useState('')
 
   // Auto-fetch suggestions when dialog opens
   useEffect(() => {
@@ -89,15 +90,17 @@ export function TrackPriceDialog({
   }
 
   const handleStartTracking = async () => {
-    const urlToTrack = showCustomInput ? customUrl : selectedUrl
+    // Use whichever URL is available (custom input or selected suggestion)
+    const urlToTrack = customUrl || selectedUrl
 
-    if (!urlToTrack) {
+    if (!urlToTrack || !urlToTrack.trim()) {
       setError('Please select or enter a product URL')
       return
     }
 
     setTracking(true)
     setError('')
+    setTrackingStatus('Fetching product page...')
 
     try {
       const response = await fetch('/api/track-price', {
@@ -109,9 +112,12 @@ export function TrackPriceDialog({
         }),
       })
 
+      setTrackingStatus('Extracting price information...')
+
       const data = await response.json()
 
       if (response.ok) {
+        setTrackingStatus('Price tracking started!')
         setSuccess(true)
         setTimeout(() => {
           onOpenChange(false)
@@ -120,12 +126,16 @@ export function TrackPriceDialog({
         }, 1500)
       } else {
         setError(data.error || 'Failed to start price tracking')
+        setTrackingStatus('')
       }
     } catch (err) {
       console.error('Failed to start tracking:', err)
       setError('Failed to start price tracking')
+      setTrackingStatus('')
     } finally {
-      setTracking(false)
+      if (!success) {
+        setTracking(false)
+      }
     }
   }
 
@@ -139,6 +149,7 @@ export function TrackPriceDialog({
       setShowCustomInput(false)
       setSuccess(false)
       setError('')
+      setTrackingStatus('')
     }, 300)
   }
 
@@ -188,6 +199,16 @@ export function TrackPriceDialog({
               {error && (
                 <div className="p-3 text-sm text-[#B44D12] bg-[#FEF3F2] border border-[#FECDCA] rounded-lg font-sans">
                   {error}
+                </div>
+              )}
+
+              {/* Tracking Progress */}
+              {tracking && trackingStatus && (
+                <div className="flex items-center justify-center py-4 px-3 bg-[#2563EB]/10 border border-[#2563EB]/20 rounded-lg">
+                  <Loader2 className="w-5 h-5 animate-spin text-[#2563EB] mr-3" />
+                  <span className="text-sm text-[#2563EB] font-semibold font-sans">
+                    {trackingStatus}
+                  </span>
                 </div>
               )}
 
