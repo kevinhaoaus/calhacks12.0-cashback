@@ -126,7 +126,7 @@ export const UuidSchema = z.string()
  * Refund type validation
  */
 export const RefundTypeSchema = z.enum(['price_drop', 'return', 'price_match'], {
-  errorMap: () => ({ message: 'Invalid refund type' })
+  message: 'Invalid refund type'
 });
 
 /**
