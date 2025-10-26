@@ -1,6 +1,7 @@
-import { brightDataClient } from './index';
 import { scrapeProductPrice } from '@/lib/claude/scrape-price';
-import { withTimeout, logError } from '@/lib/utils/error-handling';
+import { logError } from '@/lib/utils/error-handling';
+import { connectScrapingBrowser, createPage, navigateToUrl } from './scraping-browser';
+import { getSelectorsForUrl, trySelectors } from './selectors';
 
 export interface PriceCheckResult {
   url: string;
@@ -14,274 +15,172 @@ export interface PriceCheckResult {
 
 /**
  * Check current price for a product URL
- * Uses Bright Data for major retailers, Claude AI for everything else
- * Now with timeout and error handling
+ * Uses Bright Data Scraping Browser (agent) with fallback to Claude AI
  */
 export async function checkProductPrice(
   productUrl: string
 ): Promise<PriceCheckResult> {
-  console.log('🔍 checkProductPrice called for:', productUrl);
+  let scrapingBrowserError: Error | null = null;
 
-  const datasetId = getDatasetForUrl(productUrl);
-  const isSupported = datasetId !== 'gd_web_scraper_api';
-
-  console.log('📊 Dataset ID:', datasetId);
-  console.log('✅ Is specialized dataset:', isSupported);
-
-  // Try Bright Data first for supported retailers
-  if (isSupported) {
-    try {
-      console.log('🌐 Attempting Bright Data for supported retailer...');
-
-      // Trigger a data collection with timeout
-      const response = await withTimeout(
-        brightDataClient.post(
-          `/datasets/v3/trigger`,
-          {
-            dataset_id: datasetId,
-            endpoint: 'product',
-            data: [{ url: productUrl }],
-          }
-        ),
-        10000, // 10 second timeout for trigger
-        'Bright Data trigger request timed out'
-      );
-
-      console.log('✅ Bright Data trigger successful, snapshot ID:', response.data.snapshot_id);
-      const snapshotId = response.data.snapshot_id;
-
-      // Poll for results with timeout (max 40 seconds total)
-      console.log('⏳ Polling for Bright Data results...');
-      const result = await withTimeout(
-        pollForResults(snapshotId),
-        40000,
-        'Bright Data polling timed out after 40 seconds'
-      );
-
-      console.log('✅ Bright Data scraping successful!');
-      return {
-        url: productUrl,
-        current_price: result.final_price || result.price,
-        currency: result.currency || 'USD',
-        available: result.availability !== 'out_of_stock',
-        title: result.title || result.name,
-        image_url: result.image,
-        timestamp: new Date().toISOString(),
-      };
-    } catch (error: any) {
-      logError(error, 'checkProductPrice - Bright Data');
-
-      // Log detailed error info
-      if (error.response) {
-        console.error('❌ Bright Data API Error:');
-        console.error('   Status:', error.response.status);
-        console.error('   Status Text:', error.response.statusText);
-        console.error('   Error Data:', error.response.data);
-
-        if (error.response.status === 404) {
-          console.error('   ⚠️  Dataset not configured in Bright Data account');
-        }
-      } else {
-        console.error('❌ Bright Data Error:', error.message);
-      }
-
-      console.log('🔄 Falling back to Claude AI scraper...');
-      // Fall through to Claude scraper
-    }
+  // Try Bright Data Scraping Browser first
+  try {
+    console.log('Using Bright Data Scraping Browser for:', productUrl);
+    return await scrapeWithBrowser(productUrl);
+  } catch (error) {
+    scrapingBrowserError = error as Error;
+    logError(error, 'checkProductPrice - Scraping Browser');
+    console.error('Scraping Browser failed:', error);
   }
 
-  // Use Claude AI scraper for unsupported retailers or if Bright Data failed
+  // Fallback to Claude AI scraper
   try {
-    console.log('🤖 Using Claude AI scraper for:', productUrl);
-    const result = await scrapeProductPrice(productUrl);
-    console.log('✅ Claude AI scraping successful!');
-    console.log('   Price:', result.current_price);
-    console.log('   Title:', result.title);
-    return result;
-  } catch (error: any) {
+    console.log('Falling back to Claude AI scraper for:', productUrl);
+    return await scrapeProductPrice(productUrl);
+  } catch (error) {
     logError(error, 'checkProductPrice - Claude scraper');
-    console.error('❌ Claude AI scraper failed:', error.message);
+    console.error('Claude scraper also failed:', error);
 
-    // Provide more helpful error message
-    if (error.message?.includes('fetch')) {
-      throw new Error('Failed to fetch product page. The website may be blocking automated access.');
-    } else if (error.message?.includes('parse')) {
-      throw new Error('Failed to extract price from product page. Try a different URL.');
-    } else {
-      throw new Error(`Failed to check product price: ${error.message}`);
-    }
+    // Provide detailed error message
+    const browserError = scrapingBrowserError?.message || 'Unknown error';
+    const claudeError = (error as Error).message || 'Unknown error';
+
+    throw new Error(
+      `Failed to check product price. Both methods failed:\n` +
+      `1. Scraping Browser: ${browserError}\n` +
+      `2. Claude AI: ${claudeError}\n` +
+      `Please try a different product URL or try again later.`
+    );
   }
 }
 
 /**
- * Map URL to appropriate Bright Data dataset
- * Supports 100+ major retailers across multiple categories
+ * Scrape product price using Bright Data Scraping Browser
  */
-function getDatasetForUrl(url: string): string {
-  const domain = new URL(url).hostname.toLowerCase();
+async function scrapeWithBrowser(productUrl: string): Promise<PriceCheckResult> {
+  const browser = await connectScrapingBrowser();
+  const page = await createPage(browser);
 
-  // Specialized datasets for major retailers (more reliable)
-  const specializedDatasets: Record<string, string> = {
-    'amazon.com': 'gd_amazon_products',
-    'walmart.com': 'gd_walmart_products',
-    'target.com': 'gd_target_products',
-    'bestbuy.com': 'gd_bestbuy_products',
-    'homedepot.com': 'gd_homedepot_products',
-    'ebay.com': 'gd_ebay_products',
-  };
+  try {
+    // Navigate to product page
+    await navigateToUrl(page, productUrl);
 
-  // Check specialized datasets first
-  for (const [key, value] of Object.entries(specializedDatasets)) {
-    if (domain.includes(key)) return value;
+    // Get retailer-specific selectors
+    const selectors = getSelectorsForUrl(productUrl);
+
+    // Extract product data using selectors
+    const [priceText, title, imageUrl, availabilityText] = await Promise.all([
+      trySelectors(page, selectors.price),
+      trySelectors(page, selectors.title),
+      trySelectors(page, selectors.image, 'src') ||
+        page.evaluate(() => {
+          const ogImage = document.querySelector('meta[property="og:image"]');
+          return ogImage?.getAttribute('content') || null;
+        }),
+      trySelectors(page, selectors.availability),
+    ]);
+
+    console.log('Scraping Browser extracted:', { priceText, title, imageUrl, availabilityText });
+
+    // Parse price
+    let price = parsePrice(priceText);
+
+    // If no price found with selectors, try to find it in page text
+    if (!price) {
+      console.log('Price not found with selectors, searching page text...');
+
+      const pagePriceMatch = await page.evaluate(() => {
+        const bodyText = document.body.innerText;
+
+        // Look for price patterns like $123.45, $123, etc.
+        const pricePatterns = [
+          /\$\s*(\d{1,5}(?:,\d{3})*(?:\.\d{2})?)/g, // $1,234.56 or $1234.56
+          /(\d{1,5}(?:,\d{3})*(?:\.\d{2})?)\s*(?:USD|dollars?)/gi, // 1234.56 USD
+        ];
+
+        for (const pattern of pricePatterns) {
+          const matches = [...bodyText.matchAll(pattern)];
+          if (matches.length > 0) {
+            // Return the first reasonable price (not 0, not too high)
+            for (const match of matches) {
+              const priceNum = parseFloat(match[1].replace(/,/g, ''));
+              if (priceNum > 0 && priceNum < 100000) {
+                return match[0];
+              }
+            }
+          }
+        }
+
+        return null;
+      });
+
+      console.log('Found price in page text:', pagePriceMatch);
+      price = parsePrice(pagePriceMatch);
+    }
+
+    if (!price) {
+      console.error('Failed to parse price from text:', priceText);
+      const pageContent = await page.evaluate(() => document.body.innerText.substring(0, 500));
+      console.log('Page content preview:', pageContent);
+      throw new Error(`Could not extract price from page. Price text found: "${priceText}"`);
+    }
+
+    // Check availability
+    const available = checkAvailability(availabilityText);
+
+    return {
+      url: productUrl,
+      current_price: price,
+      currency: 'USD', // TODO: Add currency detection
+      available,
+      title: title || 'Unknown Product',
+      image_url: imageUrl || undefined,
+      timestamp: new Date().toISOString(),
+    };
+  } finally {
+    await page.close();
   }
+}
 
-  // 100+ Popular retailers using universal web scraper
-  // This ensures Bright Data is used instead of Claude AI fallback
-  const supportedRetailers = [
-    // Electronics & Tech
-    'newegg.com', 'bhphotovideo.com', 'microcenter.com', 'adorama.com',
-    'frys.com', 'tigerdirect.com', 'monoprice.com', 'crutchfield.com',
-    'apple.com', 'samsung.com', 'dell.com', 'hp.com', 'lenovo.com',
-    'microsoft.com', 'google.store', 'sonos.com', 'bose.com',
+/**
+ * Parse price from text (handles $49.99, 49.99, etc.)
+ */
+function parsePrice(priceText: string | null): number | null {
+  if (!priceText) return null;
 
-    // Fashion & Apparel
-    'nike.com', 'adidas.com', 'gap.com', 'oldnavy.com', 'bananarepublic.com',
-    'hm.com', 'zara.com', 'uniqlo.com', 'forever21.com', 'express.com',
-    'macys.com', 'nordstrom.com', 'bloomingdales.com', 'saksfifthavenue.com',
-    'kohls.com', 'jcpenney.com', 'dillards.com', 'lordandtaylor.com',
-    'asos.com', 'shein.com', 'fashionnova.com', 'prettylittlething.com',
-    'lululemon.com', 'underarmour.com', 'patagonia.com', 'thenorthface.com',
-    'urbanoutfitters.com', 'anthropologie.com', 'freepeople.com',
+  // Remove currency symbols, commas, and whitespace
+  const cleaned = priceText.replace(/[$,\s]/g, '');
 
-    // Home & Furniture
-    'ikea.com', 'wayfair.com', 'overstock.com', 'ashleyfurniture.com',
-    'crateandbarrel.com', 'westelm.com', 'potterybarn.com', 'cb2.com',
-    'bedbathandbeyond.com', 'roomstogo.com', 'article.com', 'joybird.com',
-    'houzz.com', 'lowes.com', 'acehardware.com', 'menards.com',
+  // Extract first number (handles cases like "$49.99 - $59.99")
+  const match = cleaned.match(/(\d+\.?\d*)/);
+  if (!match) return null;
 
-    // Beauty & Personal Care
-    'sephora.com', 'ulta.com', 'maccosmetics.com', 'clinique.com',
-    'esteelauder.com', 'benefitcosmetics.com', 'glossier.com', 'fenty.com',
-    'bathandbodyworks.com', 'loccitane.com', 'thebodyshop.com',
+  const price = parseFloat(match[1]);
+  return isNaN(price) ? null : price;
+}
 
-    // Sports & Outdoors
-    'rei.com', 'dickssportinggoods.com', 'academy.com', 'cabelas.com',
-    'scheels.com', 'sportsmans.com', 'backcountry.com', 'moosejaw.com',
-    'evo.com', 'competitivecyclist.com', 'steepandcheap.com',
+/**
+ * Check if product is available based on availability text
+ */
+function checkAvailability(availabilityText: string | null): boolean {
+  if (!availabilityText) return true; // Assume available if no info
 
-    // Grocery & Food
-    'whole foods.com', 'instacart.com', 'freshdirect.com', 'thrive market.com',
-    'vitacost.com', 'iherb.com', 'costco.com', 'samsclub.com', 'bjs.com',
-
-    // Department Stores
-    'sears.com', 'belk.com', 'boscovs.com', 'vonmaur.com', 'neiman marcus.com',
-
-    // Specialty Retailers
-    'cratejoy.com', 'etsy.com', 'shopify.com', 'alibaba.com', 'aliexpress.com',
-    'wish.com', 'banggood.com', 'gearbest.com', 'dhgate.com',
-
-    // Books, Media & Entertainment
-    'barnesandnoble.com', 'booksamillion.com', 'powells.com', 'abebooks.com',
-    'gamestop.com', 'thinkgeek.com', 'hottopic.com', 'boxlunch.com',
-
-    // Office & School Supplies
-    'staples.com', 'officedepot.com', 'officemax.com', 'quill.com',
-
-    // Pet Supplies
-    'chewy.com', 'petco.com', 'petsmart.com', 'petflow.com', 'petfooddirect.com',
-
-    // Pharmacy & Health
-    'cvs.com', 'walgreens.com', 'riteaid.com', 'drugstore.com', 'vitaminstore.com',
-
-    // Toys & Kids
-    'toysrus.com', 'toysrus.ca', 'buybuybaby.com', 'carters.com', 'oshkosh.com',
-    'gymboree.com', 'childrensplace.com', 'gap kids.com', 'target kids.com',
-
-    // Jewelry & Watches
-    'kay.com', 'jared.com', 'zales.com', 'tiffany.com', 'bluenile.com',
-    'jamesallen.com', 'brilliantearth.com', 'pandora.net',
-
-    // Automotive
-    'autozone.com', 'advanceautoparts.com', 'oreillyauto.com', 'rockauto.com',
-    'tirerack.com', 'carid.com', 'summitracing.com',
-
-    // Crafts & Hobbies
-    'michaels.com', 'hobbylobby.com', 'joann.com', 'acmoore.com',
+  const unavailableKeywords = [
+    'out of stock',
+    'unavailable',
+    'sold out',
+    'not available',
+    'discontinued',
   ];
 
-  // Check if domain matches any supported retailer
-  for (const retailer of supportedRetailers) {
-    if (domain.includes(retailer.replace(' ', ''))) {
-      return 'gd_web_scraper_api'; // Use universal scraper for these
-    }
-  }
-
-  // Default to universal web scraper for any other site
-  return 'gd_web_scraper_api';
+  const lowerText = availabilityText.toLowerCase();
+  return !unavailableKeywords.some((keyword) => lowerText.includes(keyword));
 }
 
 /**
- * Poll Bright Data API for results
- * Now with proper timeout handling
+ * Estimate Bright Data Scraping Browser cost
  */
-async function pollForResults(
-  snapshotId: string,
-  maxAttempts = 12 // 12 attempts * 3s = 36s max
-): Promise<any> {
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait 3s between polls
-
-    try {
-      const response = await withTimeout(
-        brightDataClient.get(`/datasets/v3/snapshot/${snapshotId}`),
-        5000,
-        'Snapshot status check timed out'
-      );
-
-      if (response.data.status === 'ready') {
-        // Download the results
-        const dataResponse = await withTimeout(
-          brightDataClient.get(`/datasets/v3/snapshot/${snapshotId}/download`),
-          10000,
-          'Snapshot download timed out'
-        );
-
-        if (!dataResponse.data || !dataResponse.data[0]) {
-          throw new Error('No data returned from Bright Data');
-        }
-
-        return dataResponse.data[0]; // Return first result
-      }
-
-      if (response.data.status === 'failed') {
-        throw new Error('Bright Data snapshot failed');
-      }
-
-      console.log(`Poll attempt ${i + 1}/${maxAttempts}: status = ${response.data.status}`);
-    } catch (error) {
-      // Log the error but continue polling unless it's the last attempt
-      if (i === maxAttempts - 1) {
-        throw error;
-      }
-      console.warn(`Poll attempt ${i + 1} failed:`, error);
-    }
-  }
-
-  throw new Error('Timeout waiting for price check results after 36 seconds');
-}
-
-/**
- * Estimate Bright Data cost for tracking
- */
-export function estimateBrightDataCost(
-  service: 'dataset' | 'scraper' | 'proxy',
-  requests: number
-): number {
-  const pricing = {
-    dataset: 0.005, // $0.005 per request (average)
-    scraper: 0.01, // $0.01 per page
-    proxy: 0.015, // $0.015 per request with proxy
-  };
-
-  return requests * pricing[service];
+export function estimateBrightDataCost(requests: number): number {
+  // Scraping Browser pricing: ~$0.01-0.015 per page view
+  const pricePerRequest = 0.0125; // Average $0.0125 per request
+  return requests * pricePerRequest;
 }

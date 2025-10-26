@@ -103,14 +103,15 @@ function extractStructuredData(html: string): Omit<ScrapedPriceResult, 'url' | '
 
 /**
  * Extract relevant HTML portions for Claude (smarter than just taking first N chars)
+ * Reduced to save tokens and avoid rate limits
  */
 function extractRelevantHtml(html: string): string {
   const parts: string[] = [];
 
-  // 1. Get meta tags (often have price/product info)
+  // 1. Get meta tags (often have price/product info) - reduced size
   const headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
   if (headMatch) {
-    parts.push(headMatch[0].substring(0, 30000));
+    parts.push(headMatch[0].substring(0, 10000)); // Reduced from 30000
   }
 
   // 2. Get sections likely to contain price (search for price keywords)
@@ -120,18 +121,18 @@ function extractRelevantHtml(html: string): string {
   for (const chunk of htmlChunks) {
     const lowerChunk = chunk.toLowerCase();
     if (priceKeywords.some(keyword => lowerChunk.includes(keyword))) {
-      // Found a relevant chunk, take first 5000 chars
-      parts.push(chunk.substring(0, 5000));
-      if (parts.join('').length > 80000) break;
+      // Found a relevant chunk, take first 2000 chars (reduced from 5000)
+      parts.push(chunk.substring(0, 2000));
+      if (parts.join('').length > 30000) break; // Reduced from 80000
     }
   }
 
-  // 3. If we haven't found much, just take first 50k chars as fallback
+  // 3. If we haven't found much, just take first 20k chars as fallback (reduced from 50k)
   if (parts.length < 2) {
-    return html.substring(0, 50000);
+    return html.substring(0, 20000);
   }
 
-  return parts.join('\n');
+  return parts.join('\n').substring(0, 30000); // Hard limit at 30k to save tokens
 }
 
 /**
@@ -144,25 +145,49 @@ export async function scrapeProductPrice(
   try {
     console.log('Using Claude AI to scrape price from:', productUrl);
 
-    // Fetch the webpage HTML
-    const response = await fetch(productUrl, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        Accept:
-          'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Cache-Control': 'no-cache',
-        Pragma: 'no-cache',
-      },
-    });
+    // Fetch the webpage HTML with timeout and retry logic
+    let html: string;
+    let lastError: Error | null = null;
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch page: ${response.status} ${response.statusText}`);
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+
+        const response = await fetch(productUrl, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            Accept:
+              'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Cache-Control': 'no-cache',
+            Pragma: 'no-cache',
+          },
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        html = await response.text();
+        break; // Success, exit retry loop
+      } catch (error) {
+        lastError = error as Error;
+        console.warn(`Fetch attempt ${attempt}/2 failed:`, (error as Error).message);
+
+        if (attempt === 2) {
+          // Last attempt failed, throw error
+          throw new Error(`Failed to fetch page after 2 attempts: ${lastError.message}`);
+        }
+
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
     }
-
-    const html = await response.text();
     console.log('Fetched HTML length:', html.length);
 
     // Try to extract structured data first (faster and more reliable)
@@ -180,10 +205,10 @@ export async function scrapeProductPrice(
     const relevantHtml = extractRelevantHtml(html);
     console.log('Sending', relevantHtml.length, 'chars to Claude');
 
-    // Use Claude to extract price information from HTML
+    // Use Claude Haiku (cheaper, faster, less tokens) to extract price information from HTML
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 1000,
+      model: 'claude-3-5-haiku-20241022', // Use Haiku instead of Sonnet (cheaper + faster)
+      max_tokens: 500, // Reduced from 1000
       messages: [
         {
           role: 'user',
