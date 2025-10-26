@@ -1,4 +1,4 @@
-# Reclaim.AI 💰
+# FairVal 💰
 
 > Automatically recover money from your online purchases using AI
 
@@ -7,9 +7,9 @@
 [![Supabase](https://img.shields.io/badge/Supabase-Latest-green)](https://supabase.com/)
 [![Anthropic](https://img.shields.io/badge/Claude-Sonnet%204.5-purple)](https://www.anthropic.com/)
 
-## 🎯 What is Reclaim.AI?
+## 🎯 What is FairVal?
 
-Reclaim.AI is a post-purchase money recovery system that helps you:
+FairVal is a post-purchase money recovery system that helps you:
 
 - 📧 **Track purchases** via email receipt forwarding
 - 🤖 **AI-powered analysis** of return policies with Claude

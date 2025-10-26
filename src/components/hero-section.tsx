@@ -13,7 +13,7 @@ export function HeroSection() {
                 The AI That Gets Your Money Back
               </h1>
               <p className="max-w-[506px] text-center text-[#37322f]/80 text-lg font-medium leading-7">
-                Every year, millions lose money on forgotten returns and missed price drops. Reclaim.AI is your
+                Every year, millions lose money on forgotten returns and missed price drops. FairVal is your
                 post-purchase guardian—automatically tracking purchases and filing refunds before it's too late.
               </p>
             </div>

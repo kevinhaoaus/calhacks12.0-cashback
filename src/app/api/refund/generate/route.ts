@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         refund_type,
         refund_amount: refundAmount,
-        reason: `${refund_type === 'price_drop' ? 'Price dropped' : refund_type === 'price_match' ? 'Price match request' : 'Return request'} - Generated via Reclaim.AI`,
+        reason: `${refund_type === 'price_drop' ? 'Price dropped' : refund_type === 'price_match' ? 'Price match request' : 'Return request'} - Generated via FairVal`,
         email_subject: generatedEmail.subject,
         email_body: generatedEmail.body,
         status: 'draft',

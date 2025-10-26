@@ -20,9 +20,9 @@ const instrumentSerif = Instrument_Serif({
 })
 
 export const metadata: Metadata = {
-  title: "Reclaim.AI - The AI That Gets Your Money Back",
+  title: "FairVal - The AI That Gets Your Money Back",
   description:
-    "Never lose money on forgotten returns or missed price drops. Reclaim.AI tracks your purchases and files refunds automatically.",
+    "Never lose money on forgotten returns or missed price drops. FairVal tracks your purchases and files refunds automatically.",
 }
 
 export default function RootLayout({

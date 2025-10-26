@@ -68,7 +68,7 @@ export default function DocumentationSection() {
           <div className="self-stretch text-center text-[#605A57] text-base font-normal leading-7 font-sans">
             Stop losing money on forgotten returns and missed price drops.
             <br />
-            Reclaim.AI watches your purchases and fights for your refunds.
+            FairVal watches your purchases and fights for your refunds.
           </div>
         </div>
       </div>

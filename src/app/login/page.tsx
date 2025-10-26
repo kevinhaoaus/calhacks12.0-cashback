@@ -55,7 +55,7 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <Link href="/">
             <h1 className="text-4xl font-serif font-normal text-[#37322F] mb-2 cursor-pointer hover:opacity-80 transition-opacity">
-              Reclaim.AI
+              FairVal
             </h1>
           </Link>
           <p className="text-[#605A57] text-base font-medium">

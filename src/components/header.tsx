@@ -16,7 +16,7 @@ export function Header() {
       <div className="max-w-[1060px] mx-auto px-4">
         <nav className="flex items-center justify-between py-4">
           <div className="flex items-center space-x-8">
-            <div className="text-[#37322f] font-semibold text-lg">Reclaim.AI</div>
+            <div className="text-[#37322f] font-semibold text-lg">FairVal</div>
             <div className="hidden md:flex items-center space-x-6">
               <button
                 onClick={() => scrollToSection("products")}

@@ -9,9 +9,9 @@ interface FAQItem {
 
 const faqData: FAQItem[] = [
   {
-    question: "How does Reclaim.AI find my purchases?",
+    question: "How does FairVal find my purchases?",
     answer:
-      "Reclaim.AI automatically scans your email inbox for receipts and order confirmations. It extracts purchase details, return windows, and product information so you never have to manually track anything.",
+      "FairVal automatically scans your email inbox for receipts and order confirmations. It extracts purchase details, return windows, and product information so you never have to manually track anything.",
   },
   {
     question: "What happens when a price drops?",
@@ -29,9 +29,9 @@ const faqData: FAQItem[] = [
       "Absolutely. We use enterprise-grade encryption, never store your email password, and only access receipt data with your explicit permission. Your purchase information is encrypted and stored securely.",
   },
   {
-    question: "Which stores and retailers does Reclaim.AI support?",
+    question: "Which stores and retailers does FairVal support?",
     answer:
-      "Reclaim.AI works with thousands of online retailers including Amazon, Target, Walmart, Best Buy, and most major e-commerce sites. If you have a receipt, we can track it.",
+      "FairVal works with thousands of online retailers including Amazon, Target, Walmart, Best Buy, and most major e-commerce sites. If you have a receipt, we can track it.",
   },
   {
     question: "How much money can I expect to reclaim?",

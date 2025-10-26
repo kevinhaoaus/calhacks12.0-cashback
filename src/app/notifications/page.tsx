@@ -88,7 +88,7 @@ export default function NotificationsPage() {
           <div className="flex justify-between items-center">
             <div>
               <Link href="/">
-                <h1 className="text-2xl font-serif font-normal text-[#37322F] cursor-pointer hover:opacity-80 transition-opacity">Reclaim.AI</h1>
+                <h1 className="text-2xl font-serif font-normal text-[#37322F] cursor-pointer hover:opacity-80 transition-opacity">FairVal</h1>
               </Link>
               {unreadCount > 0 && (
                 <p className="text-sm text-[#605A57] mt-1 font-sans">

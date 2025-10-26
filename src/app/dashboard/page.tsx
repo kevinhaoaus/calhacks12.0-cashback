@@ -172,7 +172,7 @@ export default async function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <Link href="/">
-              <h1 className="text-2xl font-serif font-normal text-[#37322F] cursor-pointer hover:opacity-80 transition-opacity">Reclaim.AI</h1>
+              <h1 className="text-2xl font-serif font-normal text-[#37322F] cursor-pointer hover:opacity-80 transition-opacity">FairVal</h1>
             </Link>
             <div className="flex items-center gap-4">
               <Link href="/notifications">

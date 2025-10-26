@@ -163,7 +163,7 @@ export default function TestPage() {
         <div className="flex items-center justify-between mb-6">
           <Link href="/dashboard">
             <h1 className="text-3xl font-serif font-normal text-[#37322F] cursor-pointer hover:opacity-80 transition-opacity">
-              Reclaim.AI
+              FairVal
             </h1>
           </Link>
           <Link href="/dashboard">
