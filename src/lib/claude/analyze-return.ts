@@ -1,4 +1,5 @@
 import { anthropic, MODELS } from '@/lib/anthropic';
+import { retryWithTimeout, logError } from '@/lib/utils/error-handling';
 
 export interface ReturnAnalysis {
   is_returnable: boolean;
@@ -11,6 +12,7 @@ export interface ReturnAnalysis {
 
 /**
  * Analyze if a purchase is still returnable based on the return policy
+ * Now with timeout and retry logic for reliability
  */
 export async function analyzeReturnEligibility(
   purchase: {
@@ -23,13 +25,15 @@ export async function analyzeReturnEligibility(
 ): Promise<ReturnAnalysis> {
   const today = new Date().toISOString().split('T')[0];
 
-  const message = await anthropic.messages.create({
-    model: MODELS.SONNET,
-    max_tokens: 2048,
-    messages: [
-      {
-        role: 'user',
-        content: `You are a return policy expert. Analyze if this purchase is still returnable.
+  try {
+    const message = await retryWithTimeout(
+      () => anthropic.messages.create({
+        model: MODELS.SONNET,
+        max_tokens: 2048,
+        messages: [
+          {
+            role: 'user',
+            content: `You are a return policy expert. Analyze if this purchase is still returnable.
 
 PURCHASE DETAILS:
 - Merchant: ${purchase.merchant}
@@ -59,19 +63,32 @@ Return JSON:
 }
 
 Return ONLY the JSON object.`,
-      },
-    ],
-  });
+          },
+        ],
+      }),
+      {
+        maxRetries: 3,
+        baseDelay: 1000,
+        timeoutMs: 30000, // 30 second timeout
+        onRetry: (attempt, error) => {
+          console.log(`Retrying return analysis (attempt ${attempt}): ${error.message}`);
+        }
+      }
+    );
 
-  const content = message.content[0];
-  if (content.type !== 'text') {
-    throw new Error('Unexpected response type from Claude');
+    const content = message.content[0];
+    if (content.type !== 'text') {
+      throw new Error('Unexpected response type from Claude');
+    }
+
+    const jsonMatch = content.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('Could not extract JSON from Claude response');
+    }
+
+    return JSON.parse(jsonMatch[0]);
+  } catch (error) {
+    logError(error, 'analyzeReturnEligibility');
+    throw new Error('Failed to analyze return eligibility. Please try again later.');
   }
-
-  const jsonMatch = content.text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error('Could not extract JSON from Claude response');
-  }
-
-  return JSON.parse(jsonMatch[0]);
 }

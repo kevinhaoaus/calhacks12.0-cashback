@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { ReceiptDataSchema, formatValidationError } from '@/lib/validation/schemas';
+import { z } from 'zod';
 
 /**
  * GET /api/purchases - List all purchases for authenticated user
@@ -87,19 +89,63 @@ export async function POST(request: NextRequest) {
     // Mode 1: Extract-only (return data without saving)
     if (extractOnly && receiptText) {
       receiptData = await extractReceiptData(receiptText);
-      return NextResponse.json({
-        success: true,
-        extractedData: receiptData,
-      });
+
+      // Validate extracted data before returning
+      try {
+        const validated = ReceiptDataSchema.parse(receiptData);
+        return NextResponse.json({
+          success: true,
+          extractedData: validated,
+        });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return NextResponse.json(
+            {
+              error: 'Extracted receipt data is invalid',
+              details: formatValidationError(error),
+              rawData: receiptData // Return raw data for debugging
+            },
+            { status: 400 }
+          );
+        }
+        throw error;
+      }
     }
 
     // Mode 2: Save provided data (from confirmation dialog)
     if (skipExtraction && providedData) {
-      receiptData = providedData;
+      // Validate user-provided data
+      try {
+        receiptData = ReceiptDataSchema.parse(providedData);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return NextResponse.json(
+            formatValidationError(error),
+            { status: 400 }
+          );
+        }
+        throw error;
+      }
     }
     // Mode 3: Legacy mode - extract and save
     else if (receiptText) {
-      receiptData = await extractReceiptData(receiptText);
+      const extracted = await extractReceiptData(receiptText);
+      // Validate extracted data
+      try {
+        receiptData = ReceiptDataSchema.parse(extracted);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return NextResponse.json(
+            {
+              error: 'Extracted receipt data is invalid',
+              details: formatValidationError(error),
+              rawData: extracted // Return raw data for debugging
+            },
+            { status: 400 }
+          );
+        }
+        throw error;
+      }
     } else {
       return NextResponse.json(
         { error: 'Either receiptText or receiptData is required' },

@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { TrendingUp, X } from 'lucide-react'
+import { TrendingUp, X, DollarSign } from 'lucide-react'
 import { TrackPriceDialog } from '@/components/track-price-dialog'
+import { RefundDialog } from '@/components/refund-dialog'
 
 interface Purchase {
   id: string
@@ -15,7 +16,12 @@ interface Purchase {
   price_tracking?: Array<{
     price_drop_detected: boolean
     price_drop_amount: number
+    current_price: number
   }>
+  retailers?: {
+    has_price_match: boolean
+    price_match_days: number
+  }
 }
 
 interface PurchasesListProps {
@@ -26,6 +32,8 @@ export function PurchasesList({ purchases: initialPurchases }: PurchasesListProp
   const [purchases, setPurchases] = useState<Purchase[]>(initialPurchases)
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [refundDialogOpen, setRefundDialogOpen] = useState(false)
+  const [selectedRefundPurchase, setSelectedRefundPurchase] = useState<Purchase | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   // Sync local state with prop updates
@@ -36,6 +44,11 @@ export function PurchasesList({ purchases: initialPurchases }: PurchasesListProp
   const handleTrackPrice = (purchase: Purchase) => {
     setSelectedPurchase(purchase)
     setDialogOpen(true)
+  }
+
+  const handleRequestRefund = (purchase: Purchase) => {
+    setSelectedRefundPurchase(purchase)
+    setRefundDialogOpen(true)
   }
 
   const handleDelete = async (id: string) => {
@@ -115,6 +128,15 @@ export function PurchasesList({ purchases: initialPurchases }: PurchasesListProp
                   </div>
 
                   <div className="flex gap-2 flex-shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleRequestRefund(purchase)}
+                      className="border-[#16A34A] text-[#16A34A] hover:bg-[#16A34A] hover:text-white font-sans"
+                    >
+                      <DollarSign className="w-4 h-4 mr-1" />
+                      Request Refund
+                    </Button>
                     {!hasTracking(purchase) && (
                       <Button
                         size="sm"
@@ -173,6 +195,14 @@ export function PurchasesList({ purchases: initialPurchases }: PurchasesListProp
           merchantName={selectedPurchase.merchant_name}
           productName={getFirstItemName(selectedPurchase.items) || undefined}
           totalAmount={selectedPurchase.total_amount}
+        />
+      )}
+
+      {selectedRefundPurchase && (
+        <RefundDialog
+          open={refundDialogOpen}
+          onOpenChange={setRefundDialogOpen}
+          purchase={selectedRefundPurchase}
         />
       )}
     </>

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkProductPrice } from '@/lib/bright-data/price-tracker';
+import { ProductUrlSchema, UuidSchema, formatValidationError } from '@/lib/validation/schemas';
+import { z } from 'zod';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +15,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { purchase_id, product_url } = await request.json();
+    const body = await request.json();
+    const { purchase_id, product_url } = body;
+
+    // Validate inputs
+    try {
+      UuidSchema.parse(purchase_id);
+      ProductUrlSchema.parse(product_url);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return NextResponse.json(
+          formatValidationError(error),
+          { status: 400 }
+        );
+      }
+      throw error;
+    }
 
     // Verify purchase belongs to user
     const { data: purchase } = await supabase
@@ -27,7 +44,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Purchase not found' }, { status: 404 });
     }
 
-    // Get initial price using Bright Data
+    // Get initial price using Bright Data (URL is now validated)
     const priceResult = await checkProductPrice(product_url);
 
     // Create price tracking record
@@ -122,6 +139,19 @@ export async function DELETE(request: NextRequest) {
 
     if (!trackingId) {
       return NextResponse.json({ error: 'Missing tracking ID' }, { status: 400 });
+    }
+
+    // Validate tracking ID format
+    try {
+      UuidSchema.parse(trackingId);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return NextResponse.json(
+          { error: 'Invalid tracking ID format' },
+          { status: 400 }
+        );
+      }
+      throw error;
     }
 
     // Verify tracking belongs to user's purchase

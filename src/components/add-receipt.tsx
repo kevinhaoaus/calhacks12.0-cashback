@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FileUpload } from '@/components/file-upload'
 import { ReceiptConfirmationDialog } from '@/components/receipt-confirmation-dialog'
+import { LoadingProgress, LoadingStep } from '@/components/ui/loading-progress'
 import { Upload, FileText, Loader2 } from 'lucide-react'
 
 interface ReceiptData {
@@ -29,34 +30,92 @@ export function AddReceipt() {
   const [extractedData, setExtractedData] = useState<ReceiptData | null>(null)
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [loadingSteps, setLoadingSteps] = useState<LoadingStep[]>([])
+  const [abortController, setAbortController] = useState<AbortController | null>(null)
 
   const handleFileSelect = async (file: File) => {
     setSelectedFile(file)
     setError('')
     setProcessing(true)
 
+    // Initialize loading steps
+    const steps: LoadingStep[] = [
+      { label: 'Uploading image...', status: 'in_progress' },
+      { label: 'Extracting text...', status: 'pending' },
+      { label: 'Analyzing data...', status: 'pending' },
+    ]
+    setLoadingSteps(steps)
+
+    // Create abort controller for cancellation
+    const controller = new AbortController()
+    setAbortController(controller)
+
     try {
       const formData = new FormData()
       formData.append('file', file)
 
+      // Step 1: Upload
       const response = await fetch('/api/upload-receipt', {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
       })
+
+      if (controller.signal.aborted) {
+        setProcessing(false)
+        return
+      }
+
+      // Update to step 2
+      steps[0].status = 'completed'
+      steps[1].status = 'in_progress'
+      setLoadingSteps([...steps])
 
       const data = await response.json()
 
+      // Step 3: Complete
+      steps[1].status = 'completed'
+      steps[2].status = 'in_progress'
+      setLoadingSteps([...steps])
+
+      await new Promise(resolve => setTimeout(resolve, 500)) // Brief pause for UX
+
       if (response.ok && data.extractedData) {
+        steps[2].status = 'completed'
+        setLoadingSteps([...steps])
+
+        await new Promise(resolve => setTimeout(resolve, 300)) // Show success
+
         setExtractedData(data.extractedData)
         setShowConfirmation(true)
       } else {
+        steps[2].status = 'error'
+        setLoadingSteps([...steps])
         setError(data.error || 'Failed to process receipt')
       }
-    } catch (err) {
-      console.error('Upload failed:', err)
-      setError('Failed to upload and process receipt')
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        console.log('Upload canceled')
+      } else {
+        console.error('Upload failed:', err)
+        const currentStep = steps.findIndex(s => s.status === 'in_progress')
+        if (currentStep >= 0) {
+          steps[currentStep].status = 'error'
+          setLoadingSteps([...steps])
+        }
+        setError('Failed to upload and process receipt')
+      }
     } finally {
       setProcessing(false)
+      setAbortController(null)
+    }
+  }
+
+  const handleCancel = () => {
+    if (abortController) {
+      abortController.abort()
+      setProcessing(false)
+      setLoadingSteps([])
     }
   }
 
@@ -150,11 +209,12 @@ export function AddReceipt() {
               allowCamera={true}
             />
 
-            {processing && (
-              <div className="flex items-center justify-center py-4 text-[#605A57] font-sans">
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                Processing receipt...
-              </div>
+            {processing && loadingSteps.length > 0 && (
+              <LoadingProgress
+                steps={loadingSteps}
+                estimatedTime={15}
+                onCancel={handleCancel}
+              />
             )}
 
             {selectedFile && !processing && (

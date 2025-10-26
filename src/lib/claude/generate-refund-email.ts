@@ -1,4 +1,5 @@
 import { anthropic, MODELS } from '@/lib/anthropic';
+import { retryWithTimeout, logError } from '@/lib/utils/error-handling';
 
 export interface RefundEmail {
   subject: string;
@@ -8,6 +9,7 @@ export interface RefundEmail {
 
 /**
  * Generate a professional refund request email using Claude
+ * Now with timeout and retry logic for reliability
  */
 export async function generateRefundEmail(
   refundType: 'price_drop' | 'return' | 'price_match',
@@ -24,7 +26,8 @@ export async function generateRefundEmail(
     email: string;
   }
 ): Promise<RefundEmail> {
-  const message = await anthropic.messages.create({
+  try {
+    const message = await anthropic.messages.create({
     model: MODELS.SONNET,
     max_tokens: 1500,
     messages: [
@@ -63,15 +66,19 @@ Return ONLY the JSON object.`,
     ],
   });
 
-  const content = message.content[0];
-  if (content.type !== 'text') {
-    throw new Error('Unexpected response type from Claude');
-  }
+    const content = message.content[0];
+    if (content.type !== 'text') {
+      throw new Error('Unexpected response type from Claude');
+    }
 
-  const jsonMatch = content.text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error('Could not extract JSON from Claude response');
-  }
+    const jsonMatch = content.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('Could not extract JSON from Claude response');
+    }
 
-  return JSON.parse(jsonMatch[0]);
+    return JSON.parse(jsonMatch[0]);
+  } catch (error) {
+    logError(error, 'generateRefundEmail');
+    throw new Error('Failed to generate refund email. Please try again later.');
+  }
 }

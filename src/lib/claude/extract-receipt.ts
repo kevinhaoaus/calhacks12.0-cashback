@@ -1,4 +1,5 @@
 import { anthropic, MODELS } from '@/lib/anthropic';
+import { retryWithTimeout, logError } from '@/lib/utils/error-handling';
 
 export interface ReceiptData {
   merchant: string;
@@ -15,17 +16,20 @@ export interface ReceiptData {
 
 /**
  * Extract structured data from receipt OCR text using Claude
+ * Now with timeout and retry logic for reliability
  */
 export async function extractReceiptData(
   ocrText: string
 ): Promise<ReceiptData> {
-  const message = await anthropic.messages.create({
-    model: MODELS.SONNET,
-    max_tokens: 1024,
-    messages: [
-      {
-        role: 'user',
-        content: `You are a receipt data extraction expert. Extract structured data from this receipt OCR text.
+  try {
+    const message = await retryWithTimeout(
+      () => anthropic.messages.create({
+        model: MODELS.SONNET,
+        max_tokens: 1024,
+        messages: [
+          {
+            role: 'user',
+            content: `You are a receipt data extraction expert. Extract structured data from this receipt OCR text.
 
 OCR Text:
 ${ocrText}
@@ -51,20 +55,33 @@ Rules:
 - confidence: Your confidence in the extraction (0-1)
 
 Return ONLY the JSON object, no explanation or markdown.`,
-      },
-    ],
-  });
+          },
+        ],
+      }),
+      {
+        maxRetries: 3,
+        baseDelay: 1000,
+        timeoutMs: 30000, // 30 second timeout
+        onRetry: (attempt, error) => {
+          console.log(`Retrying receipt extraction (attempt ${attempt}): ${error.message}`);
+        }
+      }
+    );
 
-  const content = message.content[0];
-  if (content.type !== 'text') {
-    throw new Error('Unexpected response type from Claude');
+    const content = message.content[0];
+    if (content.type !== 'text') {
+      throw new Error('Unexpected response type from Claude');
+    }
+
+    // Parse the JSON response
+    const jsonMatch = content.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('Could not extract JSON from Claude response');
+    }
+
+    return JSON.parse(jsonMatch[0]);
+  } catch (error) {
+    logError(error, 'extractReceiptData');
+    throw new Error('Failed to extract receipt data. Please try again or check the image quality.');
   }
-
-  // Parse the JSON response
-  const jsonMatch = content.text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error('Could not extract JSON from Claude response');
-  }
-
-  return JSON.parse(jsonMatch[0]);
 }
