@@ -33,7 +33,7 @@ export function Header() {
               <button className="text-[#37322f] hover:text-[#37322f]/80 text-sm font-medium">Docs</button>
             </div>
           </div>
-          <Link href="/auth">
+          <Link href="/login">
             <Button variant="ghost" className="text-[#37322f] hover:bg-[#37322f]/5">
               Log in
             </Button>

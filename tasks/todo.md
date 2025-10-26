@@ -1,66 +1,41 @@
-# Universal Return Policy Scraper
+# Fix Landing Page URL Links ✅
 
-## Current Task: Implement Universal Return Policy Scraping for Any Merchant
+## Review - Fixed Login and Signup Button Links
 
-### Problem
-- Return policies are only hardcoded for 20 retailers (Amazon, Walmart, etc.)
-- No return policy TEXT is actually stored in the database
-- The system has code to ANALYZE return policies (`analyze-return.ts`) but no code to FETCH them
-- This means return eligibility analysis never runs because `return_policy_text` is always null
+### What Was Fixed
+Fixed all broken navigation links on the landing page that were redirecting to a non-existent `/auth` page.
 
-### Goal
-Create a universal return policy scraper that works for ANY merchant website, similar to how the price scraper works for any product.
+### Files Modified
+1. **`src/components/header.tsx`** (line 36):
+   - Changed "Log in" button link from `/auth` to `/login`
 
-### Plan
+2. **`src/components/cta-section.tsx`** (line 39):
+   - Changed "Start reclaiming money" button link from `/auth` to `/signup`
 
-#### Phase 1: Create Return Policy Scraper
-- [x] Create `src/lib/claude/scrape-return-policy.ts` with two functions:
-  - `findReturnPolicyUrl()` - Discover the return policy URL for a merchant
-  - `scrapeReturnPolicy()` - Extract policy text from the policy page using Claude AI
+### Changes Summary
+- Header "Log in" button: `/auth` → `/login`
+- CTA "Start reclaiming money" button: `/auth` → `/signup`
+- Hero "Start reclaiming money" button was already correct at `/signup`
 
-#### Phase 2: Integrate with Purchase Flow
-- [x] Update `src/app/api/purchases/route.ts`:
-  - When a new purchase is created, check if retailer exists
-  - If retailer doesn't have policy text, scrape it automatically
-  - Store the policy text and URL in the database
-  - Then run the existing return analysis
-- [x] Update `src/app/api/webhooks/email/route.ts`:
-  - Same integration for email-forwarded receipts
+### Impact
+**Before:**
+- Clicking "Log in" or "Start reclaiming money" buttons redirected to `/auth` (404 page)
+- Users couldn't access the login or signup pages from the landing page
 
-#### Phase 3: Add API Endpoint (Optional but Useful)
-- [ ] Create `src/app/api/scrape-policy/route.ts`:
-  - Allow manual triggering of policy scrapes
-  - Useful for refreshing stale policies or debugging
-  - *SKIPPING FOR NOW* - can be added later if needed
+**After:**
+- "Log in" button correctly redirects to `/login`
+- "Start reclaiming money" buttons correctly redirect to `/signup`
+- All navigation works as expected
 
-### Technical Approach
-
-**Similar to price scraping:**
-1. Use Claude AI + web search to find the return policy page URL
-2. Fetch the HTML from that URL
-3. Use Claude AI to extract clean, structured policy text
-4. Store in database with timestamp
-
-**Key differences from price scraping:**
-- We're looking for policy PAGES not product pages
-- We extract TEXT not numbers
-- We cache results longer (policies change less than prices)
-
-### Files to Create
-- `src/lib/claude/scrape-return-policy.ts` (main scraper)
-- `src/app/api/scrape-policy/route.ts` (optional API endpoint)
-
-### Files to Modify
-- `src/app/api/purchases/route.ts` (integrate scraper into purchase flow)
-- `src/app/api/webhooks/email/route.ts` (same integration for email webhook)
-
-### Expected Outcome
-- Any merchant's return policy will be automatically scraped when first encountered
-- Return eligibility analysis will actually run (it currently never runs)
-- System will work for ALL merchants, not just the 20 hardcoded ones
-- Policies will be cached in database for performance
+### Simple, Minimal Changes
+- Modified 2 files
+- Changed 2 URLs total
+- No functional changes, just URL corrections
+- Zero impact on other parts of the codebase
 
 ---
+
+# Universal Return Policy Scraper
 
 ## Review - Universal Return Policy Scraper ✅
 
