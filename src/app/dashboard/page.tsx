@@ -8,6 +8,10 @@ import { PurchasesList } from '@/components/purchases-list'
 import { AddReceipt } from '@/components/add-receipt'
 import Link from 'next/link'
 
+// Disable caching for this page - always fetch fresh data
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function DashboardPage() {
   const supabase = await createClient()
 
@@ -20,7 +24,7 @@ export default async function DashboardPage() {
   }
 
   // Get user's purchases with price tracking
-  const { data: purchases } = await supabase
+  const { data: purchases, error: purchasesError } = await supabase
     .from('purchases')
     .select(`
       *,
@@ -34,12 +38,28 @@ export default async function DashboardPage() {
         original_price,
         price_drop_detected,
         price_drop_amount,
-        last_checked
+        last_checked,
+        tracking_active
       )
     `)
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(10)
+
+  if (purchasesError) {
+    console.error('Error fetching purchases:', purchasesError)
+  }
+
+  console.log('Dashboard data:', {
+    purchasesCount: purchases?.length || 0,
+    purchasesWithTracking: purchases?.filter(p => p.price_tracking?.length > 0).length || 0,
+    purchases: purchases?.map(p => ({
+      id: p.id,
+      merchant: p.merchant_name,
+      hasTracking: !!p.price_tracking?.length,
+      trackingActive: p.price_tracking?.[0]?.tracking_active
+    }))
+  })
 
   // Get unread notifications count
   const { count: unreadCount } = await supabase
@@ -49,10 +69,27 @@ export default async function DashboardPage() {
     .eq('read', false)
 
   // Get refund requests data
-  const { data: refundRequests } = await supabase
+  const { data: refundRequests, error: refundError } = await supabase
     .from('refund_requests')
     .select('*')
     .eq('user_id', user.id)
+
+  if (refundError) {
+    console.error('Error fetching refund requests:', refundError)
+  }
+
+  console.log('Refund requests:', {
+    total: refundRequests?.length || 0,
+    sent: refundRequests?.filter(r => r.email_sent).length || 0,
+    approved: refundRequests?.filter(r => r.status === 'approved' || r.status === 'completed').length || 0,
+    requests: refundRequests?.map(r => ({
+      id: r.id,
+      type: r.refund_type,
+      amount: r.refund_amount,
+      status: r.status,
+      email_sent: r.email_sent
+    }))
+  })
 
   // Get user settings for forwarding email
   let { data: settings } = await supabase
