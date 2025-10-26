@@ -3,6 +3,8 @@ import puppeteer, { Browser, Page } from 'puppeteer-core';
 const BRIGHT_DATA_CUSTOMER_ID = process.env.BRIGHT_DATA_CUSTOMER_ID!;
 // Support both SBR and SBP (typo in env var name)
 const BRIGHT_DATA_SBR_PASSWORD = process.env.BRIGHT_DATA_SBR_PASSWORD || process.env.BRIGHT_DATA_SBP_PASSWORD!;
+// Allow custom zone name, default to scraping_browser1
+const BRIGHT_DATA_ZONE = process.env.BRIGHT_DATA_ZONE || 'scraping_browser1';
 
 if (!BRIGHT_DATA_CUSTOMER_ID || !BRIGHT_DATA_SBR_PASSWORD) {
   console.warn('Bright Data credentials not configured. Customer ID or Password missing.');
@@ -10,9 +12,9 @@ if (!BRIGHT_DATA_CUSTOMER_ID || !BRIGHT_DATA_SBR_PASSWORD) {
 
 /**
  * Bright Data Scraping Browser WebSocket endpoint
- * Format: wss://brd-customer-{CUSTOMER_ID}-zone-scraping_browser1:{PASSWORD}@brd.superproxy.io:9222
+ * Format: wss://brd-customer-{CUSTOMER_ID}-zone-{ZONE_NAME}:{PASSWORD}@brd.superproxy.io:9222
  */
-const SBR_WS_ENDPOINT = `wss://brd-customer-${BRIGHT_DATA_CUSTOMER_ID}-zone-scraping_browser1:${BRIGHT_DATA_SBR_PASSWORD}@brd.superproxy.io:9222`;
+const SBR_WS_ENDPOINT = `wss://brd-customer-${BRIGHT_DATA_CUSTOMER_ID}-zone-${BRIGHT_DATA_ZONE}:${BRIGHT_DATA_SBR_PASSWORD}@brd.superproxy.io:9222`;
 
 let browserInstance: Browser | null = null;
 
@@ -26,15 +28,27 @@ export async function connectScrapingBrowser(): Promise<Browser> {
   }
 
   try {
+    console.log(`Attempting to connect to Bright Data zone: ${BRIGHT_DATA_ZONE}`);
     browserInstance = await puppeteer.connect({
       browserWSEndpoint: SBR_WS_ENDPOINT,
     });
 
     console.log('Connected to Bright Data Scraping Browser');
     return browserInstance;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to connect to Scraping Browser:', error);
-    throw new Error('Could not connect to Bright Data Scraping Browser. Check credentials.');
+
+    // Provide more specific error messages
+    if (error.message?.includes('503')) {
+      throw new Error(
+        `Bright Data Scraping Browser zone "${BRIGHT_DATA_ZONE}" returned 503. ` +
+        `This zone may not exist or is not active. Please check your Bright Data dashboard.`
+      );
+    } else if (error.message?.includes('403')) {
+      throw new Error('Bright Data credentials are invalid. Check your Customer ID and Password.');
+    }
+
+    throw new Error(`Could not connect to Bright Data Scraping Browser: ${error.message}`);
   }
 }
 
