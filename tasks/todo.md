@@ -1,60 +1,65 @@
 # Reclaim.AI - Current Development Status
 
-## Current Task: Auto-Suggest Product URLs for Price Tracking ✅
+## Current Task: Receipt Upload on Dashboard + Confirmation/Edit Flow
 
-### Problem
-Users have no way to add products for price tracking. The price tracking infrastructure exists but there's no UI to start tracking products from purchases.
+### Problems
+1. Users can only upload receipts via the `/test` page - not accessible from main dashboard
+2. Receipts are auto-saved to database immediately after processing - no user confirmation
+3. No ability to edit/correct extracted data before saving
 
-### Solution Implemented
+### Solution Plan
 
-Implemented an AI-powered auto-suggest feature that:
-1. Adds "Track Price" button to each purchase in Recent Purchases (only shows if not already tracking)
-2. When clicked, uses Claude with Web Search to find the product URL automatically
-3. Shows up to 3 suggested URLs to user for confirmation
-4. Allows manual URL input as fallback
-5. Starts price tracking once confirmed
-6. Shows success state and refreshes dashboard
+**Part 1: Add Receipt Upload to Dashboard**
+- Create new "Add Receipt" card on dashboard
+- Include both upload methods:
+  - Image/PDF upload (camera + file picker)
+  - Text paste
+- Use existing upload/processing APIs
 
-### Files Created
+**Part 2: Confirmation & Editing Flow**
+- After processing, show confirmation dialog with extracted data
+- Make all fields editable:
+  - Merchant name
+  - Purchase date
+  - Total amount
+  - Individual items (name, price, quantity)
+- Add "Save to Dashboard" and "Cancel" buttons
+- Only save to database on confirmation
 
-- `src/app/api/suggest-product-url/route.ts` - API endpoint using Claude + Web Search to find product URLs
-- `src/components/track-price-dialog.tsx` - Modal dialog for URL suggestions and confirmation
-- `src/components/purchases-list.tsx` - Client component with Track Price buttons
+### Implementation Steps
 
-### Files Modified
-
-- `src/app/dashboard/page.tsx` - Uses new PurchasesList component
-
-### Features
-
-- **AI-Powered URL Discovery**: Uses Claude Sonnet 4.5 with web_search tool to find product pages
-- **Smart Filtering**: Only shows URLs from supported retailers (Amazon, Walmart, Target, Best Buy, Home Depot, eBay)
-- **Confidence Scoring**: Each suggestion has a confidence level (high/medium/low)
-- **Manual Override**: Users can enter custom URLs if suggestions aren't accurate
-- **Auto-fetch**: Suggestions load automatically when dialog opens
-- **Error Handling**: Graceful fallback if AI search fails
-- **Success Feedback**: Visual confirmation when tracking starts
-- **Conditional Display**: Track Price button only shows on purchases not already being tracked
+- [ ] Add receipt upload card to dashboard
+- [ ] Create receipt confirmation dialog with editable fields
+- [ ] Update upload flow to show confirmation instead of auto-saving
+- [ ] Add save/cancel functionality
+- [ ] Test complete flow
 
 ---
 
 ## Recently Completed
 
+### Auto-Suggest Product URLs for Price Tracking ✅
+
+**Files Created:**
+- `src/app/api/suggest-product-url/route.ts` - Claude AI + Web Search integration
+- `src/components/track-price-dialog.tsx` - Modal with URL suggestions
+- `src/components/purchases-list.tsx` - Client component with Track Price buttons
+
+**Features:**
+- AI-Powered URL Discovery using Claude + Web Search
+- Smart filtering to supported retailers
+- Confidence scoring
+- Manual URL input fallback
+
 ### Price Tracking Visibility ✅
 
 **Files Created:**
-- `src/components/price-tracking-list.tsx` - Client component for displaying and managing price tracking
-
-**Files Modified:**
-- `src/app/dashboard/page.tsx` - Added Price Tracking card section
+- `src/components/price-tracking-list.tsx` - Display and manage tracked products
 
 **Features:**
-- Responsive grid layout showing all price tracking details
-- Color-coded price changes (green for drops, red for increases)
-- Trend icons (up/down/neutral arrows)
-- Clickable product URLs that open in new tab
-- One-click remove with optimistic UI updates
-- Loading states and empty states
+- Shows all tracked products with price history
+- Color-coded price changes
+- Remove tracking functionality
 
 ---
 
@@ -94,11 +99,9 @@ Implemented an AI-powered auto-suggest feature that:
 - Cron job for daily price checks
 - Price drop notification system
 
-## Current Branch Status
-
-**Kevin Branch** (current):
-- Price tracking visibility feature
-- All previous features
+### Phase 6: Price Tracking UX ✅
+- Price tracking visibility dashboard
+- AI-powered URL auto-suggest
 
 ## Architecture Overview
 
@@ -113,6 +116,8 @@ Implemented an AI-powered auto-suggest feature that:
 - `src/app/api/track-price/route.ts` - Price tracking API
 - `src/app/api/cron/check-prices/route.ts` - Daily price checks
 - `src/components/price-tracking-list.tsx` - Price tracking display
+- `src/components/track-price-dialog.tsx` - Track price modal
+- `src/components/purchases-list.tsx` - Purchases with track price buttons
 
 ### Database Schema
 - retailers

@@ -6,6 +6,7 @@ import { analyzeReturnEligibility } from '@/lib/claude/analyze-return';
 
 /**
  * POST /api/upload-receipt - Upload and process receipt image
+ * Now returns extracted data without saving (for confirmation flow)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -31,10 +32,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file type
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
     if (!validTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Invalid file type. Please upload a JPG, PNG, or WebP image.' },
+        { error: 'Invalid file type. Please upload a JPG, PNG, WebP, or PDF file.' },
         { status: 400 }
       );
     }
@@ -56,71 +57,10 @@ export async function POST(request: NextRequest) {
 
     console.log('Receipt data extracted:', receiptData);
 
-    // Step 3: Find retailer
-    const { data: retailers } = await supabase
-      .from('retailers')
-      .select('*')
-      .ilike('name', `%${receiptData.merchant}%`)
-      .limit(1);
-
-    const retailer = retailers && retailers.length > 0 ? retailers[0] : null;
-
-    // Step 4: Calculate return deadline
-    const returnDays = retailer?.default_return_days || 30;
-    const purchaseDate = new Date(receiptData.date);
-    const returnDeadline = new Date(purchaseDate);
-    returnDeadline.setDate(returnDeadline.getDate() + returnDays);
-
-    // Step 5: Analyze return eligibility
-    let claudeAnalysis = null;
-    if (retailer?.return_policy_text) {
-      claudeAnalysis = await analyzeReturnEligibility(
-        {
-          merchant: receiptData.merchant,
-          purchaseDate: receiptData.date,
-          totalAmount: receiptData.total,
-          items: receiptData.items,
-        },
-        retailer.return_policy_text
-      );
-    }
-
-    // Step 6: Save purchase to database
-    const { data: purchase, error } = await supabase
-      .from('purchases')
-      .insert({
-        user_id: user.id,
-        ocr_raw_text: ocrText,
-        merchant_name: receiptData.merchant,
-        retailer_id: retailer?.id,
-        purchase_date: receiptData.date,
-        total_amount: receiptData.total,
-        currency: receiptData.currency,
-        items: receiptData.items,
-        return_deadline: returnDeadline.toISOString().split('T')[0],
-        return_window_days: returnDays,
-        claude_analysis: claudeAnalysis,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // Step 7: Create notification
-    await supabase.from('notifications').insert({
-      user_id: user.id,
-      purchase_id: purchase.id,
-      type: 'return_expiring',
-      title: 'New Purchase Tracked',
-      message: `Your ${receiptData.merchant} purchase ($${receiptData.total}) will expire on ${returnDeadline.toLocaleDateString()}`,
-      priority: 'normal',
-    });
-
+    // Return extracted data for user confirmation (don't save yet)
     return NextResponse.json({
       success: true,
-      purchase,
-      receiptData,
-      analysis: claudeAnalysis,
+      extractedData: receiptData,
       ocrText,
     });
   } catch (error) {

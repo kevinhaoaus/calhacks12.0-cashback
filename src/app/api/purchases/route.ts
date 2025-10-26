@@ -57,7 +57,11 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST /api/purchases - Manually add a purchase (for testing)
+ * POST /api/purchases - Manually add a purchase
+ * Supports two modes:
+ * 1. Extract-only: { receiptText, extractOnly: true } - Returns extracted data without saving
+ * 2. Save: { receiptData, skipExtraction: true } - Saves provided data directly
+ * 3. Legacy: { receiptText } - Extracts and saves (for backward compatibility)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -72,21 +76,36 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { receiptText } = body;
-
-    if (!receiptText) {
-      return NextResponse.json(
-        { error: 'Receipt text is required' },
-        { status: 400 }
-      );
-    }
+    const { receiptText, receiptData: providedData, skipExtraction, extractOnly } = body;
 
     // Import here to avoid circular dependencies
     const { extractReceiptData } = await import('@/lib/claude/extract-receipt');
     const { analyzeReturnEligibility } = await import('@/lib/claude/analyze-return');
 
-    // Extract receipt data with Claude
-    const receiptData = await extractReceiptData(receiptText);
+    let receiptData;
+
+    // Mode 1: Extract-only (return data without saving)
+    if (extractOnly && receiptText) {
+      receiptData = await extractReceiptData(receiptText);
+      return NextResponse.json({
+        success: true,
+        extractedData: receiptData,
+      });
+    }
+
+    // Mode 2: Save provided data (from confirmation dialog)
+    if (skipExtraction && providedData) {
+      receiptData = providedData;
+    }
+    // Mode 3: Legacy mode - extract and save
+    else if (receiptText) {
+      receiptData = await extractReceiptData(receiptText);
+    } else {
+      return NextResponse.json(
+        { error: 'Either receiptText or receiptData is required' },
+        { status: 400 }
+      );
+    }
 
     // Find retailer
     const { data: retailers } = await supabase
