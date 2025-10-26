@@ -226,10 +226,15 @@ Return ONLY valid JSON (no markdown, no explanation):
   "image_url": "https://..."
 }
 
-CRITICAL:
+CRITICAL RULES:
 - price MUST be a number (convert "$29.99" to 29.99)
 - Look in meta tags, JSON data, class="price", id="price", data-price attributes
-- If price not found, use 0
+- IGNORE monthly/installment prices (e.g., "$33/mo", "per month", "monthly payment")
+- ONLY extract the FULL one-time purchase price
+- Look for keywords: "full price", "retail price", "buy now", "one-time"
+- If you see "starting at $X/mo" or "$X per month", look for the full price nearby
+- Common patterns: Monthly price is small, full price is crossed out or below
+- If ONLY monthly price found and NO full price exists, return price: 0
 - currency defaults to "USD"
 - available defaults to true`,
         },
@@ -254,12 +259,31 @@ CRITICAL:
 
     console.log('Claude extracted price data:', extracted);
 
+    // Validate the price - detect if it's likely a monthly price that slipped through
+    let price = extracted.price || 0;
+    const title = extracted.title || 'Unknown Product';
+
+    // Check if the price seems suspiciously low for an electronics/phone product
+    // iPhones, laptops, etc. are rarely under $100 one-time
+    if (price > 0 && price < 100 && (
+      title.toLowerCase().includes('iphone') ||
+      title.toLowerCase().includes('macbook') ||
+      title.toLowerCase().includes('laptop') ||
+      title.toLowerCase().includes('ipad') ||
+      title.toLowerCase().includes('airpods pro') ||
+      title.toLowerCase().includes('galaxy') ||
+      title.toLowerCase().includes('pixel')
+    )) {
+      console.warn(`⚠️ Suspicious low price detected: $${price} for "${title}". This might be a monthly price. Setting to 0.`);
+      price = 0; // Set to 0 to indicate we couldn't find the real price
+    }
+
     return {
       url: productUrl,
-      current_price: extracted.price || 0,
+      current_price: price,
       currency: extracted.currency || 'USD',
       available: extracted.available !== false, // Default to true if not specified
-      title: extracted.title || 'Unknown Product',
+      title,
       image_url: extracted.image_url,
       timestamp: new Date().toISOString(),
     };
