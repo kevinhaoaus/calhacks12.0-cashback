@@ -1,4 +1,5 @@
 import { brightDataClient } from './index';
+import { scrapeProductPrice } from '@/lib/claude/scrape-price';
 
 export interface PriceCheckResult {
   url: string;
@@ -12,43 +13,52 @@ export interface PriceCheckResult {
 
 /**
  * Check current price for a product URL
- * Uses Bright Data's E-commerce dataset collectors
+ * Uses Bright Data for major retailers, Claude AI for everything else
  */
 export async function checkProductPrice(
   productUrl: string
 ): Promise<PriceCheckResult> {
-  try {
-    // Determine which dataset to use based on URL
-    const datasetId = getDatasetForUrl(productUrl);
+  const datasetId = getDatasetForUrl(productUrl);
+  const isSupported = datasetId !== 'gd_web_scraper_api';
 
-    // Trigger a data collection
-    const response = await brightDataClient.post(
-      `/datasets/v3/trigger`,
-      {
-        dataset_id: datasetId,
-        endpoint: 'product',
-        data: [{ url: productUrl }],
-      }
-    );
+  // Try Bright Data first for supported retailers
+  if (isSupported) {
+    try {
+      console.log('Using Bright Data for supported retailer:', productUrl);
 
-    const snapshotId = response.data.snapshot_id;
+      // Trigger a data collection
+      const response = await brightDataClient.post(
+        `/datasets/v3/trigger`,
+        {
+          dataset_id: datasetId,
+          endpoint: 'product',
+          data: [{ url: productUrl }],
+        }
+      );
 
-    // Poll for results (typically takes 10-30 seconds)
-    const result = await pollForResults(snapshotId);
+      const snapshotId = response.data.snapshot_id;
 
-    return {
-      url: productUrl,
-      current_price: result.final_price || result.price,
-      currency: result.currency || 'USD',
-      available: result.availability !== 'out_of_stock',
-      title: result.title || result.name,
-      image_url: result.image,
-      timestamp: new Date().toISOString(),
-    };
-  } catch (error) {
-    console.error('Price check failed:', error);
-    throw new Error(`Failed to check price for ${productUrl}`);
+      // Poll for results (typically takes 10-30 seconds)
+      const result = await pollForResults(snapshotId);
+
+      return {
+        url: productUrl,
+        current_price: result.final_price || result.price,
+        currency: result.currency || 'USD',
+        available: result.availability !== 'out_of_stock',
+        title: result.title || result.name,
+        image_url: result.image,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('Bright Data failed, falling back to Claude:', error);
+      // Fall through to Claude scraper
+    }
   }
+
+  // Use Claude AI scraper for unsupported retailers or if Bright Data failed
+  console.log('Using Claude AI scraper for:', productUrl);
+  return await scrapeProductPrice(productUrl);
 }
 
 /**

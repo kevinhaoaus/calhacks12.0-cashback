@@ -62,7 +62,7 @@ export function PurchasesList({ purchases }: PurchasesListProps) {
                     </h3>
                     <p className="text-sm text-[#605A57] font-sans">
                       ${purchase.total_amount.toFixed(2)} •{' '}
-                      {new Date(purchase.purchase_date).toLocaleDateString()}
+                      {new Date(purchase.purchase_date).toLocaleDateString('en-US')}
                     </p>
                     {purchase.items && Array.isArray(purchase.items) && (
                       <p className="text-sm text-[#605A57] mt-1 font-sans">
@@ -106,7 +106,7 @@ export function PurchasesList({ purchases }: PurchasesListProps) {
                       {daysUntil < 0 ? 'Expired' : `${daysUntil} days left`}
                     </p>
                     <p className="text-sm text-[#605A57] font-sans">
-                      Return by {deadline?.toLocaleDateString()}
+                      Return by {deadline?.toLocaleDateString('en-US')}
                     </p>
                   </>
                 )}

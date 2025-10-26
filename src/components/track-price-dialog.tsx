@@ -263,7 +263,7 @@ export function TrackPriceDialog({
                     className="border-[#E0DEDB] focus:border-[#37322F] focus:ring-[#37322F] font-sans"
                   />
                   <p className="text-xs text-[#605A57] font-sans">
-                    Supported: Amazon, Walmart, Target, Best Buy, Home Depot, eBay
+                    Works with any online retailer - paste the product page URL
                   </p>
                   {suggestions.length > 0 && (
                     <Button

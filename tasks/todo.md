@@ -1,13 +1,56 @@
 # Reclaim.AI - Current Development Status
 
-## Current Task: Receipt Upload on Dashboard + Confirmation/Edit Flow ✅
+## Current Task: Universal Price Tracking Support ✅
 
-### Problems (Solved!)
+### Problem (Solved!)
+- ✅ Price tracking only worked for specific retailers (Amazon, Walmart, Target, Best Buy, Home Depot, eBay)
+- ✅ Random product URLs from other websites showed "Not supported" or failed
+- ✅ Users wanted to track prices across ALL websites, not just major retailers
+
+### Solution Implemented
+
+**Goal:** Make price tracking work for any product URL from any website ✅
+
+**Approach:** Hybrid system
+1. Use Bright Data for major retailers (fast, reliable, existing integration)
+2. Use Claude AI web scraping for all other websites (universal fallback)
+
+**Files Created:**
+- `src/lib/claude/scrape-price.ts` - Claude AI-powered web scraper for any website
+  - Fetches webpage HTML
+  - Uses Claude Sonnet 4.5 to extract: product title, price, currency, availability
+  - Returns same interface as Bright Data scraper
+
+**Files Modified:**
+- `src/lib/bright-data/price-tracker.ts` - Added hybrid approach
+  - Try Bright Data first for supported retailers
+  - Fall back to Claude scraper if unsupported or if Bright Data fails
+  - Seamless fallback - user doesn't know which backend is used
+
+- `src/components/track-price-dialog.tsx` - Updated messaging
+  - Changed from "Supported: Amazon, Walmart, Target, Best Buy, Home Depot, eBay"
+  - Now says "Works with any online retailer - paste the product page URL"
+
+**Benefits:**
+- ✅ Works with ANY product URL from ANY website (Amazon Skibidi Toilet, etc.)
+- ✅ Still fast for major retailers (Bright Data)
+- ✅ Universal coverage (Claude fallback)
+- ✅ No changes needed to database or API endpoints
+- ✅ Transparent to users
+- ✅ Graceful degradation if Bright Data has issues
+
+---
+
+## Recently Completed
+
+### Receipt Upload on Dashboard + Confirmation/Edit Flow ✅
+
+**Problems (Solved!):**
 1. ✅ Users can only upload receipts via the `/test` page - not accessible from main dashboard
 2. ✅ Receipts are auto-saved to database immediately after processing - no user confirmation
 3. ✅ No ability to edit/correct extracted data before saving
 
-### Solution Implemented
+**Solution Implemented:**
 
 **Part 1: Add Receipt Upload to Dashboard ✅**
 - Created new "Add Receipt" card on dashboard
@@ -28,20 +71,17 @@
 - Only saves to database after user confirms
 - Shows success feedback before reload
 
-### Files Created
-
+**Files Created:**
 - `src/components/add-receipt.tsx` - Main upload component with tabs
 - `src/components/receipt-confirmation-dialog.tsx` - Editable confirmation dialog
 
-### Files Modified
-
+**Files Modified:**
 - `src/app/dashboard/page.tsx` - Added Add Receipt card
 - `src/app/api/purchases/route.ts` - Added extract-only mode
 - `src/app/api/upload-receipt/route.ts` - Changed to return data without saving
 - `tasks/todo.md` - Updated
 
-### Features
-
+**Features:**
 - **Upload Methods**: Camera, file picker, or text paste
 - **Extract-Only Mode**: APIs return data without auto-saving
 - **Full Editing**: All extracted fields can be modified
@@ -49,10 +89,6 @@
 - **Confidence Score**: Shows extraction confidence level
 - **User Confirmation**: No saves without explicit user approval
 - **Success Feedback**: Visual confirmation before reload
-
----
-
-## Recently Completed
 
 ### Auto-Suggest Product URLs for Price Tracking ✅
 
