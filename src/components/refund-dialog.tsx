@@ -55,7 +55,7 @@ export function RefundDialog({ open, onOpenChange, purchase }: RefundDialogProps
 
   // Check if price tracking exists for price_drop
   const hasPriceTracking = purchase.price_tracking && purchase.price_tracking.length > 0
-  const trackedPrice = hasPriceTracking ? purchase.price_tracking[0].current_price : null
+  const trackedPrice = hasPriceTracking ? purchase.price_tracking?.[0]?.current_price : null
 
   // Check if retailer supports price matching
   const supportsPriceMatch = purchase.retailers?.has_price_match || false
