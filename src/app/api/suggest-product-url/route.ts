@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       max_tokens: 2000,
       tools: [
         {
-          type: 'web_search_20250124' as const,
+          type: 'web_search_20250305' as const,
           name: 'web_search',
           display_name: 'Web Search',
         },
