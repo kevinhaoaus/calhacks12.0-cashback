@@ -1,38 +1,54 @@
 # Reclaim.AI - Current Development Status
 
-## Current Task: Receipt Upload on Dashboard + Confirmation/Edit Flow
+## Current Task: Receipt Upload on Dashboard + Confirmation/Edit Flow ✅
 
-### Problems
-1. Users can only upload receipts via the `/test` page - not accessible from main dashboard
-2. Receipts are auto-saved to database immediately after processing - no user confirmation
-3. No ability to edit/correct extracted data before saving
+### Problems (Solved!)
+1. ✅ Users can only upload receipts via the `/test` page - not accessible from main dashboard
+2. ✅ Receipts are auto-saved to database immediately after processing - no user confirmation
+3. ✅ No ability to edit/correct extracted data before saving
 
-### Solution Plan
+### Solution Implemented
 
-**Part 1: Add Receipt Upload to Dashboard**
-- Create new "Add Receipt" card on dashboard
-- Include both upload methods:
+**Part 1: Add Receipt Upload to Dashboard ✅**
+- Created new "Add Receipt" card on dashboard
+- Tabbed interface with two upload methods:
   - Image/PDF upload (camera + file picker)
   - Text paste
-- Use existing upload/processing APIs
+- Uses existing Claude AI processing
 
-**Part 2: Confirmation & Editing Flow**
-- After processing, show confirmation dialog with extracted data
-- Make all fields editable:
+**Part 2: Confirmation & Editing Flow ✅**
+- After processing, shows confirmation dialog with extracted data
+- All fields are fully editable:
   - Merchant name
   - Purchase date
   - Total amount
   - Individual items (name, price, quantity)
-- Add "Save to Dashboard" and "Cancel" buttons
-- Only save to database on confirmation
+  - Add/remove items
+- "Save to Dashboard" and "Cancel" buttons
+- Only saves to database after user confirms
+- Shows success feedback before reload
 
-### Implementation Steps
+### Files Created
 
-- [ ] Add receipt upload card to dashboard
-- [ ] Create receipt confirmation dialog with editable fields
-- [ ] Update upload flow to show confirmation instead of auto-saving
-- [ ] Add save/cancel functionality
-- [ ] Test complete flow
+- `src/components/add-receipt.tsx` - Main upload component with tabs
+- `src/components/receipt-confirmation-dialog.tsx` - Editable confirmation dialog
+
+### Files Modified
+
+- `src/app/dashboard/page.tsx` - Added Add Receipt card
+- `src/app/api/purchases/route.ts` - Added extract-only mode
+- `src/app/api/upload-receipt/route.ts` - Changed to return data without saving
+- `tasks/todo.md` - Updated
+
+### Features
+
+- **Upload Methods**: Camera, file picker, or text paste
+- **Extract-Only Mode**: APIs return data without auto-saving
+- **Full Editing**: All extracted fields can be modified
+- **Item Management**: Add/remove items from receipt
+- **Confidence Score**: Shows extraction confidence level
+- **User Confirmation**: No saves without explicit user approval
+- **Success Feedback**: Visual confirmation before reload
 
 ---
 
