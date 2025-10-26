@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { FileUpload } from '@/components/file-upload'
+import Link from 'next/link'
 
 const SAMPLE_RECEIPTS = {
   target: `TARGET STORE #1234
@@ -156,33 +157,48 @@ export default function TestPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Submit Your Receipt</h1>
-          <p className="text-gray-600">
+    <div className="min-h-screen bg-[#F7F5F3] py-12 px-4 font-sans">
+      {/* Header */}
+      <div className="max-w-4xl mx-auto mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <Link href="/dashboard">
+            <h1 className="text-3xl font-serif font-normal text-[#37322F] cursor-pointer hover:opacity-80 transition-opacity">
+              Reclaim.AI
+            </h1>
+          </Link>
+          <Link href="/dashboard">
+            <Button variant="outline" className="border-[#E0DEDB] text-[#37322F] hover:bg-[rgba(55,50,47,0.05)] font-sans">
+              Back to Dashboard
+            </Button>
+          </Link>
+        </div>
+        <div>
+          <h2 className="text-3xl font-serif font-normal text-[#37322F] mb-2">Submit Your Receipt</h2>
+          <p className="text-[#605A57] text-lg font-sans">
             Upload a photo, paste text, or use our sample receipts
           </p>
         </div>
+      </div>
 
+      <div className="max-w-4xl mx-auto">
         {/* Tabs */}
-        <div className="mb-6 flex gap-2 border-b">
+        <div className="mb-6 flex gap-2 border-b border-[rgba(55,50,47,0.12)]">
           <button
             onClick={() => setActiveTab('text')}
-            className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+            className={`px-6 py-3 font-medium border-b-2 transition-colors font-sans ${
               activeTab === 'text'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
+                ? 'border-[#37322F] text-[#37322F]'
+                : 'border-transparent text-[#605A57] hover:text-[#37322F]'
             }`}
           >
             📝 Paste Text
           </button>
           <button
             onClick={() => setActiveTab('photo')}
-            className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+            className={`px-6 py-3 font-medium border-b-2 transition-colors font-sans ${
               activeTab === 'photo'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
+                ? 'border-[#37322F] text-[#37322F]'
+                : 'border-transparent text-[#605A57] hover:text-[#37322F]'
             }`}
           >
             📸 Upload Photo
@@ -191,12 +207,12 @@ export default function TestPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Input Section */}
-          <Card>
+          <Card className="bg-white border-[rgba(55,50,47,0.12)] shadow-[0px_0px_0px_0.9px_rgba(0,0,0,0.08)]">
             <CardHeader>
-              <CardTitle>
+              <CardTitle className="text-[#37322F] font-sans font-semibold">
                 {activeTab === 'text' ? 'Receipt Text' : 'Upload Receipt Photo'}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-[#605A57] font-sans">
                 {activeTab === 'text'
                   ? 'Paste receipt text or load a sample'
                   : 'Take a photo or upload an image of your receipt'}
@@ -206,13 +222,14 @@ export default function TestPage() {
               {activeTab === 'text' ? (
                 <form onSubmit={handleTextSubmit} className="space-y-4">
                 <div>
-                  <Label>Sample Receipts</Label>
+                  <Label className="text-[#37322F] font-sans font-medium">Sample Receipts</Label>
                   <div className="flex gap-2 mt-2">
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={() => loadSample('target')}
+                      className="border-[#E0DEDB] text-[#37322F] hover:bg-[rgba(55,50,47,0.05)] font-sans"
                     >
                       Target
                     </Button>
@@ -221,6 +238,7 @@ export default function TestPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => loadSample('walmart')}
+                      className="border-[#E0DEDB] text-[#37322F] hover:bg-[rgba(55,50,47,0.05)] font-sans"
                     >
                       Walmart
                     </Button>
@@ -229,6 +247,7 @@ export default function TestPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => loadSample('amazon')}
+                      className="border-[#E0DEDB] text-[#37322F] hover:bg-[rgba(55,50,47,0.05)] font-sans"
                     >
                       Amazon
                     </Button>
@@ -236,10 +255,10 @@ export default function TestPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="receipt">Receipt Text</Label>
+                  <Label htmlFor="receipt" className="text-[#37322F] font-sans font-medium">Receipt Text</Label>
                   <textarea
                     id="receipt"
-                    className="w-full h-64 p-3 border rounded-lg font-mono text-sm mt-2"
+                    className="w-full h-64 p-3 border border-[#E0DEDB] rounded-lg font-mono text-sm mt-2 focus:border-[#37322F] focus:ring-1 focus:ring-[#37322F] outline-none transition-colors"
                     value={receiptText}
                     onChange={(e) => setReceiptText(e.target.value)}
                     placeholder="Paste receipt text here..."
@@ -248,12 +267,16 @@ export default function TestPage() {
                 </div>
 
                 {error && (
-                  <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+                  <div className="p-3 bg-[#FEF3F2] text-[#B44D12] border border-[#FECDCA] rounded-lg text-sm font-sans">
                     {error}
                   </div>
                 )}
 
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button
+                  type="submit"
+                  className="w-full bg-[#37322F] hover:bg-[#2A2520] text-white font-medium rounded-full shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] font-sans"
+                  disabled={loading}
+                >
                   {loading ? 'Processing with Claude AI...' : 'Process Receipt'}
                 </Button>
               </form>
@@ -267,14 +290,14 @@ export default function TestPage() {
                   />
 
                   {error && (
-                    <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+                    <div className="p-3 bg-[#FEF3F2] text-[#B44D12] border border-[#FECDCA] rounded-lg text-sm font-sans">
                       {error}
                     </div>
                   )}
 
                   <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full bg-[#37322F] hover:bg-[#2A2520] text-white font-medium rounded-full shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] font-sans"
                     disabled={loading || !selectedFile}
                   >
                     {loading ? 'Processing with Claude Vision...' : 'Process Receipt Photo'}
@@ -285,53 +308,53 @@ export default function TestPage() {
           </Card>
 
           {/* Results Section */}
-          <Card>
+          <Card className="bg-white border-[rgba(55,50,47,0.12)] shadow-[0px_0px_0px_0.9px_rgba(0,0,0,0.08)]">
             <CardHeader>
-              <CardTitle>Extraction Results</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-[#37322F] font-sans font-semibold">Extraction Results</CardTitle>
+              <CardDescription className="text-[#605A57] font-sans">
                 Claude AI analysis of the receipt
               </CardDescription>
             </CardHeader>
             <CardContent>
               {loading && (
                 <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-                  <p className="text-gray-600">Analyzing receipt with Claude...</p>
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#37322F] mx-auto mb-4" />
+                  <p className="text-[#605A57] font-sans">Analyzing receipt with Claude...</p>
                 </div>
               )}
 
               {result && (
                 <div className="space-y-4">
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-green-800 font-semibold">✓ Receipt processed successfully!</p>
-                    <p className="text-sm text-green-700 mt-1">
+                  <div className="p-4 bg-[#F0FDF4] border border-[#86EFAC] rounded-lg">
+                    <p className="text-[#15803D] font-semibold font-sans">✓ Receipt processed successfully!</p>
+                    <p className="text-sm text-[#16A34A] mt-1 font-sans">
                       Redirecting to dashboard...
                     </p>
                   </div>
 
                   <div className="space-y-3">
                     <div>
-                      <Label className="text-gray-500">Merchant</Label>
-                      <p className="font-semibold">{result.receiptData.merchant}</p>
+                      <Label className="text-[#605A57] font-sans">Merchant</Label>
+                      <p className="font-semibold text-[#37322F] font-sans">{result.receiptData.merchant}</p>
                     </div>
 
                     <div>
-                      <Label className="text-gray-500">Date</Label>
-                      <p className="font-semibold">{result.receiptData.date}</p>
+                      <Label className="text-[#605A57] font-sans">Date</Label>
+                      <p className="font-semibold text-[#37322F] font-sans">{result.receiptData.date}</p>
                     </div>
 
                     <div>
-                      <Label className="text-gray-500">Total</Label>
-                      <p className="font-semibold text-lg">
+                      <Label className="text-[#605A57] font-sans">Total</Label>
+                      <p className="font-semibold text-lg text-[#37322F] font-sans">
                         ${result.receiptData.total.toFixed(2)} {result.receiptData.currency}
                       </p>
                     </div>
 
                     <div>
-                      <Label className="text-gray-500">Items ({result.receiptData.items.length})</Label>
+                      <Label className="text-[#605A57] font-sans">Items ({result.receiptData.items.length})</Label>
                       <ul className="mt-2 space-y-1">
                         {result.receiptData.items.map((item: any, i: number) => (
-                          <li key={i} className="text-sm flex justify-between">
+                          <li key={i} className="text-sm flex justify-between text-[#37322F] font-sans">
                             <span>{item.name} x{item.quantity}</span>
                             <span className="font-semibold">${item.price.toFixed(2)}</span>
                           </li>
@@ -340,29 +363,29 @@ export default function TestPage() {
                     </div>
 
                     <div>
-                      <Label className="text-gray-500">Confidence</Label>
+                      <Label className="text-[#605A57] font-sans">Confidence</Label>
                       <div className="mt-2">
-                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-2 bg-[rgba(55,50,47,0.1)] rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-blue-600"
+                            className="h-full bg-[#37322F]"
                             style={{ width: `${result.receiptData.confidence * 100}%` }}
                           />
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-sm text-[#605A57] mt-1 font-sans">
                           {(result.receiptData.confidence * 100).toFixed(0)}% confident
                         </p>
                       </div>
                     </div>
 
                     {result.analysis && (
-                      <div className="pt-4 border-t">
-                        <Label className="text-gray-500">Return Analysis</Label>
-                        <p className="text-sm mt-2">
-                          <span className={result.analysis.is_returnable ? 'text-green-600' : 'text-red-600'}>
+                      <div className="pt-4 border-t border-[#E0DEDB]">
+                        <Label className="text-[#605A57] font-sans">Return Analysis</Label>
+                        <p className="text-sm mt-2 font-sans">
+                          <span className={result.analysis.is_returnable ? 'text-[#16A34A]' : 'text-[#B44D12]'}>
                             {result.analysis.is_returnable ? '✓ Returnable' : '✗ Not returnable'}
                           </span>
                           {result.analysis.days_remaining > 0 && (
-                            <span className="text-gray-600">
+                            <span className="text-[#605A57]">
                               {' '}• {result.analysis.days_remaining} days remaining
                             </span>
                           )}
@@ -374,21 +397,12 @@ export default function TestPage() {
               )}
 
               {!loading && !result && (
-                <div className="text-center py-12 text-gray-500">
-                  <p>Results will appear here after processing</p>
+                <div className="text-center py-12 text-[#605A57]">
+                  <p className="font-sans">Results will appear here after processing</p>
                 </div>
               )}
             </CardContent>
           </Card>
-        </div>
-
-        <div className="mt-6 text-center">
-          <Button
-            variant="outline"
-            onClick={() => router.push('/dashboard')}
-          >
-            Back to Dashboard
-          </Button>
         </div>
       </div>
     </div>

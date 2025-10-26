@@ -87,24 +87,26 @@ export default async function DashboardPage() {
   }).length || 0
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
+    <div className="min-h-screen bg-[#F7F5F3] font-sans">
+      <header className="bg-white border-b border-[rgba(55,50,47,0.12)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">Reclaim.AI</h1>
+            <Link href="/">
+              <h1 className="text-2xl font-serif font-normal text-[#37322F] cursor-pointer hover:opacity-80 transition-opacity">Reclaim.AI</h1>
+            </Link>
             <div className="flex items-center gap-4">
               <Link href="/notifications">
-                <Button variant="outline" className="relative">
+                <Button variant="outline" className="relative border-[#E0DEDB] text-[#37322F] hover:bg-[rgba(55,50,47,0.05)] font-sans">
                   Notifications
                   {unreadCount && unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 bg-[#B44D12] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center shadow-sm">
                       {unreadCount}
                     </span>
                   )}
                 </Button>
               </Link>
               <form action="/api/auth/signout" method="post">
-                <Button type="submit" variant="outline">
+                <Button type="submit" variant="outline" className="border-[#E0DEDB] text-[#37322F] hover:bg-[rgba(55,50,47,0.05)] font-sans">
                   Sign out
                 </Button>
               </form>
@@ -115,25 +117,25 @@ export default async function DashboardPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">
-            Welcome back, {user.user_metadata?.name || 'User'}!
+          <h2 className="text-4xl font-serif font-normal text-[#37322F] mb-2">
+            Welcome back, {user.user_metadata?.name || 'User'}
           </h2>
-          <p className="text-gray-600">
+          <p className="text-[#605A57] text-lg font-sans">
             Your post-purchase money recovery dashboard
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
+          <Card className="bg-white border-[rgba(55,50,47,0.12)] shadow-[0px_0px_0px_0.9px_rgba(0,0,0,0.08)]">
             <CardHeader>
-              <CardTitle>Total Savings</CardTitle>
-              <CardDescription>Potential money recovered</CardDescription>
+              <CardTitle className="text-[#37322F] font-sans font-semibold">Total Savings</CardTitle>
+              <CardDescription className="text-[#605A57] font-sans">Potential money recovered</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-green-600">
+              <div className="text-4xl font-bold text-[#16A34A]">
                 ${totalSavings.toFixed(2)}
               </div>
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-sm text-[#605A57] mt-2 font-sans">
                 {purchases && purchases.length > 0
                   ? `${purchases.length} purchase${purchases.length !== 1 ? 's' : ''} tracked`
                   : 'No purchases tracked yet'}
@@ -141,40 +143,40 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white border-[rgba(55,50,47,0.12)] shadow-[0px_0px_0px_0.9px_rgba(0,0,0,0.08)]">
             <CardHeader>
-              <CardTitle>Active Purchases</CardTitle>
-              <CardDescription>Items being tracked</CardDescription>
+              <CardTitle className="text-[#37322F] font-sans font-semibold">Active Purchases</CardTitle>
+              <CardDescription className="text-[#605A57] font-sans">Items being tracked</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold">{activePurchases}</div>
-              <p className="text-sm text-gray-500 mt-2">
+              <div className="text-4xl font-bold text-[#37322F]">{activePurchases}</div>
+              <p className="text-sm text-[#605A57] mt-2 font-sans">
                 {activePurchases === 0 ? 'Start by adding a receipt' : 'Being monitored'}
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white border-[rgba(55,50,47,0.12)] shadow-[0px_0px_0px_0.9px_rgba(0,0,0,0.08)]">
             <CardHeader>
-              <CardTitle>Price Drops</CardTitle>
-              <CardDescription>Price drops detected</CardDescription>
+              <CardTitle className="text-[#37322F] font-sans font-semibold">Price Drops</CardTitle>
+              <CardDescription className="text-[#605A57] font-sans">Price drops detected</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-blue-600">{priceDrops}</div>
-              <p className="text-sm text-gray-500 mt-2">
+              <div className="text-4xl font-bold text-[#2563EB]">{priceDrops}</div>
+              <p className="text-sm text-[#605A57] mt-2 font-sans">
                 {priceDrops === 0 ? 'No price drops yet' : 'Refund opportunities'}
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white border-[rgba(55,50,47,0.12)] shadow-[0px_0px_0px_0.9px_rgba(0,0,0,0.08)]">
             <CardHeader>
-              <CardTitle>Expiring Soon</CardTitle>
-              <CardDescription>Return windows closing</CardDescription>
+              <CardTitle className="text-[#37322F] font-sans font-semibold">Expiring Soon</CardTitle>
+              <CardDescription className="text-[#605A57] font-sans">Return windows closing</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-orange-600">{expiringSoon}</div>
-              <p className="text-sm text-gray-500 mt-2">
+              <div className="text-4xl font-bold text-[#EA580C]">{expiringSoon}</div>
+              <p className="text-sm text-[#605A57] mt-2 font-sans">
                 {expiringSoon === 0 ? 'No urgent actions needed' : 'Within 7 days'}
               </p>
             </CardContent>
@@ -182,21 +184,21 @@ export default async function DashboardPage() {
         </div>
 
         {/* Forwarding Email */}
-        <Card className="mb-8">
+        <Card className="mb-8 bg-white border-[rgba(55,50,47,0.12)] shadow-[0px_0px_0px_0.9px_rgba(0,0,0,0.08)]">
           <CardHeader>
-            <CardTitle>Your Forwarding Email</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-[#37322F] font-sans font-semibold">Your Forwarding Email</CardTitle>
+            <CardDescription className="text-[#605A57] font-sans">
               Forward purchase receipts to this email to track them automatically
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
-              <code className="flex-1 bg-gray-100 px-4 py-3 rounded-lg font-mono text-sm">
+              <code className="flex-1 bg-[rgba(55,50,47,0.05)] border border-[#E0DEDB] px-4 py-3 rounded-lg font-mono text-sm text-[#37322F]">
                 {settings?.forward_email || 'Loading...'}
               </code>
               <CopyButton text={settings?.forward_email || ''} />
             </div>
-            <p className="text-sm text-gray-600 mt-4">
+            <p className="text-sm text-[#605A57] mt-4 font-sans">
               Forward any purchase confirmation email to this address, and we'll automatically extract the details using AI.
             </p>
           </CardContent>
@@ -204,10 +206,10 @@ export default async function DashboardPage() {
 
         {/* Recent Purchases */}
         {purchases && purchases.length > 0 ? (
-          <Card>
+          <Card className="bg-white border-[rgba(55,50,47,0.12)] shadow-[0px_0px_0px_0.9px_rgba(0,0,0,0.08)]">
             <CardHeader>
-              <CardTitle>Recent Purchases</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-[#37322F] font-sans font-semibold">Recent Purchases</CardTitle>
+              <CardDescription className="text-[#605A57] font-sans">
                 Your tracked purchases and return windows
               </CardDescription>
             </CardHeader>
@@ -222,20 +224,20 @@ export default async function DashboardPage() {
                   return (
                     <div
                       key={purchase.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                      className="flex items-center justify-between p-4 border border-[#E0DEDB] rounded-lg hover:bg-[rgba(55,50,47,0.02)] transition-colors"
                     >
                       <div>
-                        <h3 className="font-semibold text-lg">{purchase.merchant_name}</h3>
-                        <p className="text-sm text-gray-600">
+                        <h3 className="font-semibold text-lg text-[#37322F] font-sans">{purchase.merchant_name}</h3>
+                        <p className="text-sm text-[#605A57] font-sans">
                           ${purchase.total_amount.toFixed(2)} • {new Date(purchase.purchase_date).toLocaleDateString()}
                         </p>
                         {purchase.items && Array.isArray(purchase.items) && (
-                          <p className="text-sm text-gray-500 mt-1">
+                          <p className="text-sm text-[#605A57] mt-1 font-sans">
                             {purchase.items.length} item{purchase.items.length !== 1 ? 's' : ''}
                           </p>
                         )}
                         {purchase.price_tracking?.[0]?.price_drop_detected && (
-                          <p className="text-sm text-blue-600 font-semibold mt-1">
+                          <p className="text-sm text-[#2563EB] font-semibold mt-1 font-sans">
                             💰 Price dropped ${purchase.price_tracking[0].price_drop_amount?.toFixed(2)}!
                           </p>
                         )}
@@ -243,14 +245,14 @@ export default async function DashboardPage() {
                       <div className="text-right">
                         {daysUntil !== null && (
                           <>
-                            <p className={`font-semibold ${
-                              daysUntil < 7 ? 'text-orange-600' :
-                              daysUntil < 0 ? 'text-red-600' :
-                              'text-green-600'
+                            <p className={`font-semibold font-sans ${
+                              daysUntil < 7 ? 'text-[#EA580C]' :
+                              daysUntil < 0 ? 'text-[#B44D12]' :
+                              'text-[#16A34A]'
                             }`}>
                               {daysUntil < 0 ? 'Expired' : `${daysUntil} days left`}
                             </p>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-[#605A57] font-sans">
                               Return by {deadline?.toLocaleDateString()}
                             </p>
                           </>
@@ -263,35 +265,37 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         ) : (
-          <Card>
+          <Card className="bg-white border-[rgba(55,50,47,0.12)] shadow-[0px_0px_0px_0.9px_rgba(0,0,0,0.08)]">
             <CardHeader>
-              <CardTitle>Getting Started</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-[#37322F] font-sans font-semibold">Getting Started</CardTitle>
+              <CardDescription className="text-[#605A57] font-sans">
                 Start recovering money from your purchases
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="border-l-4 border-blue-500 pl-4 py-2">
-                <h3 className="font-semibold mb-1">Step 1: Forward Your Receipts</h3>
-                <p className="text-sm text-gray-600">
+              <div className="border-l-4 border-l-[#37322F] pl-4 py-2">
+                <h3 className="font-semibold mb-1 text-[#37322F] font-sans">Step 1: Forward Your Receipts</h3>
+                <p className="text-sm text-[#605A57] font-sans">
                   Copy your forwarding email above and forward any purchase receipt to it
                 </p>
               </div>
-              <div className="border-l-4 border-blue-500 pl-4 py-2">
-                <h3 className="font-semibold mb-1">Step 2: AI Analysis</h3>
-                <p className="text-sm text-gray-600">
+              <div className="border-l-4 border-l-[#37322F] pl-4 py-2">
+                <h3 className="font-semibold mb-1 text-[#37322F] font-sans">Step 2: AI Analysis</h3>
+                <p className="text-sm text-[#605A57] font-sans">
                   Claude AI automatically extracts purchase details and analyzes return policies
                 </p>
               </div>
-              <div className="border-l-4 border-blue-500 pl-4 py-2">
-                <h3 className="font-semibold mb-1">Step 3: Track & Save</h3>
-                <p className="text-sm text-gray-600">
+              <div className="border-l-4 border-l-[#37322F] pl-4 py-2">
+                <h3 className="font-semibold mb-1 text-[#37322F] font-sans">Step 3: Track & Save</h3>
+                <p className="text-sm text-[#605A57] font-sans">
                   We monitor prices and alert you to potential refund opportunities
                 </p>
               </div>
               <div className="mt-4">
                 <Link href="/test">
-                  <Button>Test with Sample Receipt</Button>
+                  <Button className="bg-[#37322F] hover:bg-[#2A2520] text-white font-medium rounded-full shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] font-sans">
+                    Test with Sample Receipt
+                  </Button>
                 </Link>
               </div>
             </CardContent>
