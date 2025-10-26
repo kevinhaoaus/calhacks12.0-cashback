@@ -22,34 +22,47 @@ export async function checkProductPrice(
 ): Promise<PriceCheckResult> {
   let scrapingBrowserError: Error | null = null;
 
-  // Try Bright Data Scraping Browser first
-  try {
-    console.log('Using Bright Data Scraping Browser for:', productUrl);
-    return await scrapeWithBrowser(productUrl);
-  } catch (error) {
-    scrapingBrowserError = error as Error;
-    logError(error, 'checkProductPrice - Scraping Browser');
-    console.error('Scraping Browser failed:', error);
+  // Try Bright Data first, fallback to Claude AI if it fails
+  const skipBrightData = false;
+
+  if (!skipBrightData) {
+    // Try Bright Data Scraping Browser first
+    try {
+      console.log('Using Bright Data Scraping Browser for:', productUrl);
+      return await scrapeWithBrowser(productUrl);
+    } catch (error) {
+      scrapingBrowserError = error as Error;
+      logError(error, 'checkProductPrice - Scraping Browser');
+      console.error('Scraping Browser failed:', error);
+    }
+  } else {
+    console.log('Bright Data not configured, using Claude AI directly for:', productUrl);
   }
 
   // Fallback to Claude AI scraper
   try {
-    console.log('Falling back to Claude AI scraper for:', productUrl);
+    console.log('Using Claude AI scraper for:', productUrl);
     return await scrapeProductPrice(productUrl);
   } catch (error) {
     logError(error, 'checkProductPrice - Claude scraper');
     console.error('Claude scraper also failed:', error);
 
     // Provide detailed error message
-    const browserError = scrapingBrowserError?.message || 'Unknown error';
-    const claudeError = (error as Error).message || 'Unknown error';
+    if (scrapingBrowserError) {
+      const browserError = scrapingBrowserError?.message || 'Unknown error';
+      const claudeError = (error as Error).message || 'Unknown error';
 
-    throw new Error(
-      `Failed to check product price. Both methods failed:\n` +
-      `1. Scraping Browser: ${browserError}\n` +
-      `2. Claude AI: ${claudeError}\n` +
-      `Please try a different product URL or try again later.`
-    );
+      throw new Error(
+        `Failed to check product price. Both methods failed:\n` +
+        `1. Scraping Browser: ${browserError}\n` +
+        `2. Claude AI: ${claudeError}\n` +
+        `Please try a different product URL or try again later.`
+      );
+    } else {
+      throw new Error(
+        `Failed to scrape price from ${productUrl}: ${(error as Error).message}`
+      );
+    }
   }
 }
 

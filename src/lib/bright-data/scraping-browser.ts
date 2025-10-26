@@ -29,20 +29,28 @@ export async function connectScrapingBrowser(): Promise<Browser> {
 
   try {
     console.log(`Attempting to connect to Bright Data zone: ${BRIGHT_DATA_ZONE}`);
+    console.log(`WebSocket endpoint: ${SBR_WS_ENDPOINT.replace(/:([^:@]+)@/, ':****@')}`); // Log endpoint with hidden password
+
     browserInstance = await puppeteer.connect({
       browserWSEndpoint: SBR_WS_ENDPOINT,
     });
 
-    console.log('Connected to Bright Data Scraping Browser');
+    console.log('✅ Successfully connected to Bright Data Scraping Browser');
     return browserInstance;
   } catch (error: any) {
-    console.error('Failed to connect to Scraping Browser:', error);
+    console.error('❌ Failed to connect to Scraping Browser:', error);
 
     // Provide more specific error messages
-    if (error.message?.includes('503')) {
+    if (error.message?.includes('500')) {
+      throw new Error(
+        `Bright Data returned 500 Internal Server Error. ` +
+        `This usually means the Scraping Browser zone "${BRIGHT_DATA_ZONE}" is not active or needs to be started. ` +
+        `Please go to your Bright Data dashboard and ensure the zone is activated.`
+      );
+    } else if (error.message?.includes('503')) {
       throw new Error(
         `Bright Data Scraping Browser zone "${BRIGHT_DATA_ZONE}" returned 503. ` +
-        `This zone may not exist or is not active. Please check your Bright Data dashboard.`
+        `This zone may not exist or is not active. Please check your Bright Data dashboard and activate the zone.`
       );
     } else if (error.message?.includes('403')) {
       throw new Error('Bright Data credentials are invalid. Check your Customer ID and Password.');
