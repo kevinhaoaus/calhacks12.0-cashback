@@ -20,13 +20,18 @@ export interface PriceCheckResult {
 export async function checkProductPrice(
   productUrl: string
 ): Promise<PriceCheckResult> {
+  console.log('🔍 checkProductPrice called for:', productUrl);
+
   const datasetId = getDatasetForUrl(productUrl);
   const isSupported = datasetId !== 'gd_web_scraper_api';
+
+  console.log('📊 Dataset ID:', datasetId);
+  console.log('✅ Is specialized dataset:', isSupported);
 
   // Try Bright Data first for supported retailers
   if (isSupported) {
     try {
-      console.log('Using Bright Data for supported retailer:', productUrl);
+      console.log('🌐 Attempting Bright Data for supported retailer...');
 
       // Trigger a data collection with timeout
       const response = await withTimeout(
@@ -42,15 +47,18 @@ export async function checkProductPrice(
         'Bright Data trigger request timed out'
       );
 
+      console.log('✅ Bright Data trigger successful, snapshot ID:', response.data.snapshot_id);
       const snapshotId = response.data.snapshot_id;
 
       // Poll for results with timeout (max 40 seconds total)
+      console.log('⏳ Polling for Bright Data results...');
       const result = await withTimeout(
         pollForResults(snapshotId),
         40000,
         'Bright Data polling timed out after 40 seconds'
       );
 
+      console.log('✅ Bright Data scraping successful!');
       return {
         url: productUrl,
         current_price: result.final_price || result.price,
@@ -60,20 +68,48 @@ export async function checkProductPrice(
         image_url: result.image,
         timestamp: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: any) {
       logError(error, 'checkProductPrice - Bright Data');
-      console.error('Bright Data failed, falling back to Claude:', error);
+
+      // Log detailed error info
+      if (error.response) {
+        console.error('❌ Bright Data API Error:');
+        console.error('   Status:', error.response.status);
+        console.error('   Status Text:', error.response.statusText);
+        console.error('   Error Data:', error.response.data);
+
+        if (error.response.status === 404) {
+          console.error('   ⚠️  Dataset not configured in Bright Data account');
+        }
+      } else {
+        console.error('❌ Bright Data Error:', error.message);
+      }
+
+      console.log('🔄 Falling back to Claude AI scraper...');
       // Fall through to Claude scraper
     }
   }
 
   // Use Claude AI scraper for unsupported retailers or if Bright Data failed
   try {
-    console.log('Using Claude AI scraper for:', productUrl);
-    return await scrapeProductPrice(productUrl);
-  } catch (error) {
+    console.log('🤖 Using Claude AI scraper for:', productUrl);
+    const result = await scrapeProductPrice(productUrl);
+    console.log('✅ Claude AI scraping successful!');
+    console.log('   Price:', result.current_price);
+    console.log('   Title:', result.title);
+    return result;
+  } catch (error: any) {
     logError(error, 'checkProductPrice - Claude scraper');
-    throw new Error('Failed to check product price. Please verify the URL and try again.');
+    console.error('❌ Claude AI scraper failed:', error.message);
+
+    // Provide more helpful error message
+    if (error.message?.includes('fetch')) {
+      throw new Error('Failed to fetch product page. The website may be blocking automated access.');
+    } else if (error.message?.includes('parse')) {
+      throw new Error('Failed to extract price from product page. Try a different URL.');
+    } else {
+      throw new Error(`Failed to check product price: ${error.message}`);
+    }
   }
 }
 
