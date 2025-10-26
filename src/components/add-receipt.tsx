@@ -91,7 +91,18 @@ export function AddReceipt() {
       } else {
         steps[2].status = 'error'
         setLoadingSteps([...steps])
-        setError(data.error || 'Failed to process receipt')
+
+        // Show detailed validation errors if available
+        if (data.details && Array.isArray(data.details)) {
+          const errorMessages = data.details
+            .map((detail: { field: string; message: string }) =>
+              `${detail.field}: ${detail.message}`
+            )
+            .join(', ')
+          setError(`${data.error || 'Validation failed'}: ${errorMessages}`)
+        } else {
+          setError(data.error || 'Failed to process receipt')
+        }
       }
     } catch (err: any) {
       if (err.name === 'AbortError') {
@@ -144,7 +155,17 @@ export function AddReceipt() {
         setExtractedData(data.extractedData)
         setShowConfirmation(true)
       } else {
-        setError(data.error || 'Failed to extract receipt data')
+        // Show detailed validation errors if available
+        if (data.details && Array.isArray(data.details)) {
+          const errorMessages = data.details
+            .map((detail: { field: string; message: string }) =>
+              `${detail.field}: ${detail.message}`
+            )
+            .join(', ')
+          setError(`${data.error || 'Validation failed'}: ${errorMessages}`)
+        } else {
+          setError(data.error || 'Failed to extract receipt data')
+        }
       }
     } catch (err) {
       console.error('Processing failed:', err)

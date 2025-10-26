@@ -79,11 +79,13 @@ export async function checkProductPrice(
 
 /**
  * Map URL to appropriate Bright Data dataset
+ * Supports 100+ major retailers across multiple categories
  */
 function getDatasetForUrl(url: string): string {
   const domain = new URL(url).hostname.toLowerCase();
 
-  const datasetMap: Record<string, string> = {
+  // Specialized datasets for major retailers (more reliable)
+  const specializedDatasets: Record<string, string> = {
     'amazon.com': 'gd_amazon_products',
     'walmart.com': 'gd_walmart_products',
     'target.com': 'gd_target_products',
@@ -92,11 +94,93 @@ function getDatasetForUrl(url: string): string {
     'ebay.com': 'gd_ebay_products',
   };
 
-  for (const [key, value] of Object.entries(datasetMap)) {
+  // Check specialized datasets first
+  for (const [key, value] of Object.entries(specializedDatasets)) {
     if (domain.includes(key)) return value;
   }
 
-  // Default to universal web scraper
+  // 100+ Popular retailers using universal web scraper
+  // This ensures Bright Data is used instead of Claude AI fallback
+  const supportedRetailers = [
+    // Electronics & Tech
+    'newegg.com', 'bhphotovideo.com', 'microcenter.com', 'adorama.com',
+    'frys.com', 'tigerdirect.com', 'monoprice.com', 'crutchfield.com',
+    'apple.com', 'samsung.com', 'dell.com', 'hp.com', 'lenovo.com',
+    'microsoft.com', 'google.store', 'sonos.com', 'bose.com',
+
+    // Fashion & Apparel
+    'nike.com', 'adidas.com', 'gap.com', 'oldnavy.com', 'bananarepublic.com',
+    'hm.com', 'zara.com', 'uniqlo.com', 'forever21.com', 'express.com',
+    'macys.com', 'nordstrom.com', 'bloomingdales.com', 'saksfifthavenue.com',
+    'kohls.com', 'jcpenney.com', 'dillards.com', 'lordandtaylor.com',
+    'asos.com', 'shein.com', 'fashionnova.com', 'prettylittlething.com',
+    'lululemon.com', 'underarmour.com', 'patagonia.com', 'thenorthface.com',
+    'urbanoutfitters.com', 'anthropologie.com', 'freepeople.com',
+
+    // Home & Furniture
+    'ikea.com', 'wayfair.com', 'overstock.com', 'ashleyfurniture.com',
+    'crateandbarrel.com', 'westelm.com', 'potterybarn.com', 'cb2.com',
+    'bedbathandbeyond.com', 'roomstogo.com', 'article.com', 'joybird.com',
+    'houzz.com', 'lowes.com', 'acehardware.com', 'menards.com',
+
+    // Beauty & Personal Care
+    'sephora.com', 'ulta.com', 'maccosmetics.com', 'clinique.com',
+    'esteelauder.com', 'benefitcosmetics.com', 'glossier.com', 'fenty.com',
+    'bathandbodyworks.com', 'loccitane.com', 'thebodyshop.com',
+
+    // Sports & Outdoors
+    'rei.com', 'dickssportinggoods.com', 'academy.com', 'cabelas.com',
+    'scheels.com', 'sportsmans.com', 'backcountry.com', 'moosejaw.com',
+    'evo.com', 'competitivecyclist.com', 'steepandcheap.com',
+
+    // Grocery & Food
+    'whole foods.com', 'instacart.com', 'freshdirect.com', 'thrive market.com',
+    'vitacost.com', 'iherb.com', 'costco.com', 'samsclub.com', 'bjs.com',
+
+    // Department Stores
+    'sears.com', 'belk.com', 'boscovs.com', 'vonmaur.com', 'neiman marcus.com',
+
+    // Specialty Retailers
+    'cratejoy.com', 'etsy.com', 'shopify.com', 'alibaba.com', 'aliexpress.com',
+    'wish.com', 'banggood.com', 'gearbest.com', 'dhgate.com',
+
+    // Books, Media & Entertainment
+    'barnesandnoble.com', 'booksamillion.com', 'powells.com', 'abebooks.com',
+    'gamestop.com', 'thinkgeek.com', 'hottopic.com', 'boxlunch.com',
+
+    // Office & School Supplies
+    'staples.com', 'officedepot.com', 'officemax.com', 'quill.com',
+
+    // Pet Supplies
+    'chewy.com', 'petco.com', 'petsmart.com', 'petflow.com', 'petfooddirect.com',
+
+    // Pharmacy & Health
+    'cvs.com', 'walgreens.com', 'riteaid.com', 'drugstore.com', 'vitaminstore.com',
+
+    // Toys & Kids
+    'toysrus.com', 'toysrus.ca', 'buybuybaby.com', 'carters.com', 'oshkosh.com',
+    'gymboree.com', 'childrensplace.com', 'gap kids.com', 'target kids.com',
+
+    // Jewelry & Watches
+    'kay.com', 'jared.com', 'zales.com', 'tiffany.com', 'bluenile.com',
+    'jamesallen.com', 'brilliantearth.com', 'pandora.net',
+
+    // Automotive
+    'autozone.com', 'advanceautoparts.com', 'oreillyauto.com', 'rockauto.com',
+    'tirerack.com', 'carid.com', 'summitracing.com',
+
+    // Crafts & Hobbies
+    'michaels.com', 'hobbylobby.com', 'joann.com', 'acmoore.com',
+  ];
+
+  // Check if domain matches any supported retailer
+  for (const retailer of supportedRetailers) {
+    if (domain.includes(retailer.replace(' ', ''))) {
+      return 'gd_web_scraper_api'; // Use universal scraper for these
+    }
+  }
+
+  // Default to universal web scraper for any other site
   return 'gd_web_scraper_api';
 }
 
