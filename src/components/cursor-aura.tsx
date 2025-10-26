@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react"
 export function CursorAura() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const [isVisible, setIsVisible] = useState(false)
-  const rafRef = useRef<number>()
+  const rafRef = useRef<number | undefined>(undefined)
   const targetPosition = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
