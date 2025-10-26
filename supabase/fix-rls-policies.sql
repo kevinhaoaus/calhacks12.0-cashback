@@ -15,6 +15,10 @@ CREATE POLICY "Users can insert own purchases" ON purchases
 CREATE POLICY "Users can insert own refund requests" ON refund_requests
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+-- Allow users to update their own refund requests
+CREATE POLICY "Users can update own refund requests" ON refund_requests
+  FOR UPDATE USING (auth.uid() = user_id);
+
 -- Allow users to insert their own notifications
 CREATE POLICY "Users can insert own notifications" ON notifications
   FOR INSERT WITH CHECK (auth.uid() = user_id);
