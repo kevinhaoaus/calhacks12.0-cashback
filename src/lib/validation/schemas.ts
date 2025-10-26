@@ -35,7 +35,7 @@ export const ReceiptDataSchema = z.object({
     }, 'Total must have at most 2 decimal places'),
 
   currency: z.enum(['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY'], {
-    errorMap: () => ({ message: 'Invalid currency code' })
+    message: 'Invalid currency code'
   }),
 
   items: z.array(z.object({
