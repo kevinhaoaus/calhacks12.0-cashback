@@ -146,7 +146,7 @@ export async function scrapeProductPrice(
     console.log('Using Claude AI to scrape price from:', productUrl);
 
     // Fetch the webpage HTML with timeout and retry logic
-    let html: string;
+    let html: string = '';
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= 2; attempt++) {
